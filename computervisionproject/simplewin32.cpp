@@ -1,7 +1,8 @@
 // simplewin32.cpp : Defines the entry point for the application.
 //
 #include <stdio.h>
-#include    "simplewin32.h"
+#include <shobjidl.h> 
+#include  "simplewin32.h"
 #define     MAX_LOADSTRING  100
 
 // Global Variables:
@@ -20,6 +21,7 @@ char    szText [241];
 unsigned char	*image	= NULL;			// image array
 unsigned char	*grey1	= NULL;
 long			 bpp, cx = 0, cy = 0;	// image dimension
+LPOLESTR		filepath;
 BITMAPINFO		 bi;
 
 int APIENTRY _tWinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
@@ -155,13 +157,13 @@ void process (unsigned char *ig1, long cx, long cy)
 */
 }
 
-void loadfile (char *lpszpath)
+void loadfile (LPOLESTR lpszpath)
 {
 	FILE				*fp;
 	BITMAPFILEHEADER	 bf;
 	long				 line, x, b, g, r;
 
-	fp = fopen (lpszpath, "rb");
+	fp = _wfopen (lpszpath, L"rb");
 	fread (&bf, 1, sizeof (BITMAPFILEHEADER), fp);
 	fread (&bi, 1, sizeof (BITMAPINFO), fp);
 
@@ -199,6 +201,59 @@ void loadfile (char *lpszpath)
 	fclose (fp);
 }
 
+int WINAPI openDiarog()
+{
+    HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+    if (SUCCEEDED(hr))
+    {
+		
+        IFileOpenDialog *pFileOpen;
+
+        // Create the FileOpenDialog object.
+        hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL, IID_IFileOpenDialog, reinterpret_cast<void**>(&pFileOpen));
+
+		//set find to bmp
+		LPCWSTR fulltype = L"Bitmap";
+		LPCWSTR shorttype = L"*.bmp";
+		COMDLG_FILTERSPEC temp[] = { 
+			{fulltype, shorttype}
+		}; 
+
+		hr = pFileOpen->SetFileTypes(_countof(temp), temp); 
+
+        if (SUCCEEDED(hr))
+        {
+
+            hr = pFileOpen->Show(NULL);
+
+            // Get the file name from the dialog box.
+            if (SUCCEEDED(hr))
+            {
+                IShellItem *pItem;
+                hr = pFileOpen->GetResult(&pItem);
+                if (SUCCEEDED(hr))
+                {
+
+                    hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &filepath);
+
+                    // Display the file name to the user.
+                    if (SUCCEEDED(hr))
+                    {
+
+						MessageBoxW(NULL, filepath, L"File Path", MB_OK);
+						loadfile(filepath);
+
+                    }
+                    pItem->Release();
+                }
+            }
+            pFileOpen->Release();
+        }
+        CoUninitialize();
+    }
+    return 0;
+}
+
 //
 //  FUNCTION: WndProc(HWND, unsigned, WORD, LONG)
 //
@@ -226,7 +281,7 @@ LRESULT CALLBACK WndProc (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                                 case IDM_ABOUT  :   DialogBox (hInst, (LPCTSTR) IDD_ABOUTBOX, hWnd, (DLGPROC) About);
                                                     break;
 
-								case IDM_EXIT   :   loadfile ("c:\\home\\document\\423430\\data\\lena.bmp");
+								case IDM_EXIT   :   openDiarog();
 													hdc = GetDC (hWnd);
 													mydraw (hdc);
 													ReleaseDC (hWnd, hdc);
