@@ -25,11 +25,13 @@ IDC_SIMPLEWIN32 MENU
 BEGIN
     POPUP "&File"
     BEGIN
+        MENUITEM "&Open",                IDM_OPENFILE
+        MENUITEM "&Save",                IDM_SAVEFILE
         MENUITEM "E&xit",                IDM_EXIT
     END
     POPUP "&Help"
     BEGIN
-        MENUITEM "&About ...",           IDM_ABOUT
+        MENUITEM "&About",               IDM_ABOUT
     END
 END
 
