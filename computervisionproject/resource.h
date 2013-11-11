@@ -9,3 +9,5 @@
 #define IDI_SMALL                108
 #define IDC_SIMPLEWIN32          109
 #define IDR_MAINFRAME            128
+#define IDM_SAVEFILE			3000
+#define IDM_OPENFILE			3001

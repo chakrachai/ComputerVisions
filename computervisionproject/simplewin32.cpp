@@ -354,10 +354,17 @@ LRESULT CALLBACK WndProc (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                                 case IDM_ABOUT  :   DialogBox (hInst, (LPCTSTR) IDD_ABOUTBOX, hWnd, (DLGPROC) About);
                                                     break;
 
-								case IDM_EXIT   :   openDiarog();
-													hdc = GetDC (hWnd);
-													mydraw (hdc);
-													ReleaseDC (hWnd, hdc);
+								case IDM_OPENFILE   :	openDiarog();
+														loadfile(filepath);
+														hdc = GetDC (hWnd);
+														CoTaskMemFree(filepath);
+														mydraw (hdc);
+														ReleaseDC (hWnd, hdc);
+														break;
+								case IDM_SAVEFILE	:	saveDiarog();
+														break;
+								
+								case IDM_EXIT		:   PostQuitMessage (0);
 													break;
                                                        
                                 default         :   
