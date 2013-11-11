@@ -22,6 +22,7 @@ unsigned char	*image	= NULL;			// image array
 unsigned char	*grey1	= NULL;
 long			 bpp, cx = 0, cy = 0;	// image dimension
 LPOLESTR		filepath;
+BITMAPFILEHEADER	 bf;
 BITMAPINFO		 bi;
 
 int APIENTRY _tWinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
@@ -160,7 +161,6 @@ void process (unsigned char *ig1, long cx, long cy)
 void loadfile (LPOLESTR lpszpath)
 {
 	FILE				*fp;
-	BITMAPFILEHEADER	 bf;
 	long				 line, x, b, g, r;
 
 	fp = _wfopen (lpszpath, L"rb");
@@ -248,6 +248,79 @@ int WINAPI openDiarog()
                 }
             }
             pFileOpen->Release();
+        }
+        CoUninitialize();
+    }
+    return 0;
+}
+
+int WINAPI saveDiarog()
+{
+
+	FILE				*fout;
+	long				px,py;
+
+    HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+    if (SUCCEEDED(hr))
+    {
+		
+        IFileSaveDialog *pFileSave;
+
+        // Create the FileOpenDialog object.
+        hr = CoCreateInstance(CLSID_FileSaveDialog, NULL, CLSCTX_ALL, IID_IFileSaveDialog, reinterpret_cast<void**>(&pFileSave));
+
+		//set find to bmp
+		LPCWSTR fulltype = L"Bitmap";
+		LPCWSTR shorttype = L"*.bmp";
+		COMDLG_FILTERSPEC temp[] = { 
+			{fulltype, shorttype}
+		}; 
+
+		hr = pFileSave->SetFileTypes(_countof(temp), temp); 
+		hr = pFileSave->SetDefaultExtension(shorttype);
+
+        if (SUCCEEDED(hr))
+        {
+
+            hr = pFileSave->Show(NULL);
+
+            // Get the file name from the dialog box.
+            if (SUCCEEDED(hr))
+            {
+                IShellItem *pItem;
+                hr = pFileSave->GetResult(&pItem);
+                if (SUCCEEDED(hr))
+                {
+
+					 LPOLESTR pszFilePath;
+
+                    hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
+
+                    // Display the file name to the user.
+                    if (SUCCEEDED(hr))
+                    {
+                       // MessageBoxW(NULL, pszFilePath, L"File Path", MB_OK);
+						//filepath = pszFilePath;
+						MessageBoxW(NULL, pszFilePath, L"File Path", MB_OK);
+						fout = _wfopen(pszFilePath, L"wb");
+						fwrite(&bf, 1, sizeof(bf), fout);
+						fwrite(&bi, 1, sizeof(bi), fout);
+
+						for (py = 0; py < cy; py ++)
+						{
+							for (px = 0; px < cx; px ++)
+							{
+								fputc(image [bpp*(py*cx + px) + 0],fout);	
+								fputc(image [bpp*(py*cx + px) + 1],fout);
+								fputc(image [bpp*(py*cx + px) + 2],fout);
+							}
+						}
+						fclose(fout);
+                    }
+                    pItem->Release();
+                }
+            }
+            pFileSave->Release();
         }
         CoUninitialize();
     }
