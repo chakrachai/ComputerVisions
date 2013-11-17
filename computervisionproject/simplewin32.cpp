@@ -17,6 +17,8 @@ LRESULT CALLBACK        WndProc (HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK        About (HWND, UINT, WPARAM, LPARAM);
 
 HWND    hWndText;
+HWND hWnd , converlutionTool;
+int number;
 char    szText [241];
 unsigned char	*image	= NULL;			// image array
 unsigned char	*grey1	= NULL;
@@ -58,6 +60,8 @@ int APIENTRY _tWinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
     return (int) msg.wParam;
 }
 
+
+
 ATOM RegisterMainClass (HINSTANCE hInstance)
 {
     WNDCLASSEX  wcex;
@@ -81,14 +85,15 @@ ATOM RegisterMainClass (HINSTANCE hInstance)
 
 BOOL InitInstance (HINSTANCE hInstance, int nCmdShow)
 {
-    HWND hWnd;
 
     hInst   = hInstance; // Store instance handle in our global variable
     hWnd    = CreateWindow (szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
                             0, 0, 640, 480, NULL, NULL, hInstance, NULL);
 
-//    hWndText = CreateWindow ("STATIC", "0", WS_CHILD | WS_BORDER | WS_VISIBLE | SS_RIGHT,
-//               10, 10, 155, 20, hWnd, NULL, hInstance, NULL);
+	CreateWindow("BUTTON","conver",WS_CHILD | WS_VISIBLE,500,100,50,20,hWnd,(HMENU)2425,hInst,0);
+	number = nCmdShow;
+
+   // hWndText = CreateWindow ("STATIC", "0", WS_CHILD | WS_BORDER | WS_VISIBLE | SS_RIGHT,10, 10, 155, 20, hWnd, NULL, hInstance, NULL);
     if (!hWnd)
     {
         return FALSE;
@@ -111,13 +116,13 @@ void mydraw (HDC hdc)
 void process (unsigned char *ig1, long cx, long cy)
 {
 	unsigned char	*ig2;
-	long			 x, y, m, n;
+	long			 x, y, m, n , line;
 	double			 h [3][3] = {{2,  2, 2},
 								 {2,  2, 2},
 								 {2,  2, 2}};
 	double			 sum, nrm;
 
-	for (y = 0; y < cy; y ++)
+	/*for (y = 0; y < cy; y ++)
 	{
 		for (x = 0; x < cx; x ++)
 		{
@@ -125,8 +130,8 @@ void process (unsigned char *ig1, long cx, long cy)
 				ig1 [x + y*cx] = 0;
 		}
 	}
+	*/
 
-/*
 	ig2 = (unsigned char *) malloc (cx*cy);
 	for (y = 0; y < cy; y ++)
 	{
@@ -154,8 +159,18 @@ void process (unsigned char *ig1, long cx, long cy)
 		}
 	}
 
+	for (line = 0; line < cy; line ++)
+	{
+		for (x = 0; x < cx; x ++)
+		{
+			image [bpp*(line*cx + x) + 0] = grey1 [x + line*cx];
+			image [bpp*(line*cx + x) + 1] = grey1 [x + line*cx];
+			image [bpp*(line*cx + x) + 2] = grey1 [x + line*cx];
+		}
+	}
+
 	free (ig2);
-*/
+
 }
 
 void loadfile (LPOLESTR lpszpath)
@@ -186,8 +201,6 @@ void loadfile (LPOLESTR lpszpath)
 		}
 	}
 
-	process (grey1, cx, cy);
-
 	for (line = 0; line < cy; line ++)
 	{
 		for (x = 0; x < cx; x ++)
@@ -203,6 +216,8 @@ void loadfile (LPOLESTR lpszpath)
 
 int WINAPI openDiarog()
 {
+	    PAINTSTRUCT ps;
+    HDC         hdc;
     HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
     if (SUCCEEDED(hr))
     {
@@ -239,8 +254,6 @@ int WINAPI openDiarog()
                     // Display the file name to the user.
                     if (SUCCEEDED(hr))
                     {
-
-						MessageBoxW(NULL, filepath, L"File Path", MB_OK);
 						loadfile(filepath);
 
                     }
@@ -337,7 +350,7 @@ int WINAPI saveDiarog()
 //  WM_DESTROY  - post a quit message and return
 //
 //
-LRESULT CALLBACK WndProc (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK WndProc (HWND hWnds, UINT message, WPARAM wParam, LPARAM lParam)
 {
     int         wmId, wmEvent;
     PAINTSTRUCT ps;
@@ -351,36 +364,57 @@ LRESULT CALLBACK WndProc (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                             // Parse the menu selections:
                             switch (wmId)
                             {
-                                case IDM_ABOUT  :   DialogBox (hInst, (LPCTSTR) IDD_ABOUTBOX, hWnd, (DLGPROC) About);
+							case IDM_ABOUT  :   DialogBox (hInst, (LPCTSTR) IDD_ABOUTBOX, hWnds, (DLGPROC) About);
                                                     break;
 
 								case IDM_OPENFILE   :	openDiarog();
-														loadfile(filepath);
-														hdc = GetDC (hWnd);
-														CoTaskMemFree(filepath);
+														hdc = GetDC (hWnds);
 														mydraw (hdc);
-														ReleaseDC (hWnd, hdc);
+														ReleaseDC (hWnds, hdc);
+														CoTaskMemFree(filepath);
 														break;
 								case IDM_SAVEFILE	:	saveDiarog();
 														break;
 								
 								case IDM_EXIT		:   PostQuitMessage (0);
-													break;
+														break;
+								case 2425			:	if(converlutionTool == NULL){
+															converlutionTool = CreateWindowEx(NULL,szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,0, 0, 640, 480, NULL, NULL, NULL, NULL);
+															CreateWindow("BUTTON","ok",WS_CHILD | WS_VISIBLE,500,100,50,20,converlutionTool,(HMENU)2430,hInst,0);
+															CreateWindow("BUTTON","cancle",WS_CHILD | WS_VISIBLE,500,150,50,20,converlutionTool,(HMENU)2435,hInst,0);
+															ShowWindow(converlutionTool,number);
+															UpdateWindow(converlutionTool);
+														}
+														break;
+								case 2430			:	process (grey1, cx, cy);
+														hdc = GetDC (hWnd);
+														mydraw (hdc);
+														ReleaseDC (hWnd, hdc);
+														break;
                                                        
                                 default         :   
-                                                    return DefWindowProc(hWnd, message, wParam, lParam);
+                                                    return DefWindowProc(hWnds, message, wParam, lParam);
                             }
                             break;
 
-        case WM_PAINT   :   hdc = BeginPaint (hWnd, &ps);
-                            mydraw (hdc);
-                            EndPaint (hWnd, &ps);
+        case WM_PAINT   :    if(hWnds != converlutionTool){
+								hdc = BeginPaint (hWnds, &ps);
+								mydraw (hdc);
+								EndPaint (hWnds, &ps);
+							 }
+							 UpdateWindow(hWnd);
                             break;
 
-        case WM_DESTROY :   PostQuitMessage (0);
-                            break;
+		case WM_DESTROY : 	if(hWnds == converlutionTool){
+								DestroyWindow(hWnds);
+								converlutionTool = NULL;
+							}else{
+								PostQuitMessage (0);
+							}
 
-        default         :   return DefWindowProc (hWnd, message, wParam, lParam);
+							break;
+
+        default         :   return DefWindowProc (hWnds, message, wParam, lParam);
     }
     return 0;
 }
