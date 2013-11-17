@@ -216,8 +216,11 @@ void loadfile (LPOLESTR lpszpath)
 
 int WINAPI openDiarog()
 {
-	    PAINTSTRUCT ps;
+	long line,x;
+	PAINTSTRUCT ps;
     HDC         hdc;
+
+
     HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
     if (SUCCEEDED(hr))
     {
@@ -272,7 +275,6 @@ int WINAPI saveDiarog()
 
 	FILE				*fout;
 	long				px,py;
-
     HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
     if (SUCCEEDED(hr))
     {
@@ -372,6 +374,7 @@ LRESULT CALLBACK WndProc (HWND hWnds, UINT message, WPARAM wParam, LPARAM lParam
 														mydraw (hdc);
 														ReleaseDC (hWnds, hdc);
 														CoTaskMemFree(filepath);
+														SetWindowPos(hWnd,0,0,0,cx+16,cy+59,0);
 														break;
 								case IDM_SAVEFILE	:	saveDiarog();
 														break;
@@ -402,7 +405,6 @@ LRESULT CALLBACK WndProc (HWND hWnds, UINT message, WPARAM wParam, LPARAM lParam
 								mydraw (hdc);
 								EndPaint (hWnds, &ps);
 							 }
-							 UpdateWindow(hWnd);
                             break;
 
 		case WM_DESTROY : 	if(hWnds == converlutionTool){
