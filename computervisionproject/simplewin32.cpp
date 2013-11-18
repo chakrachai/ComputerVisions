@@ -7,7 +7,6 @@
 
 // Global Variables:
 HINSTANCE   hInst;                          // current instance
-HINSTANCE   hInstt;
 char        szTitle [MAX_LOADSTRING];       // The title bar text
 char        szWindowClass [MAX_LOADSTRING]; // the main window class name
 char        szWindowChildClass [MAX_LOADSTRING];
@@ -19,7 +18,10 @@ LRESULT CALLBACK        WndProc (HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK        About (HWND, UINT, WPARAM, LPARAM);
 
 HWND    hWndText;
-HWND hWnd , converlutionTool;
+HWND hWnd, converlutionTool;
+HWND converlutionTool1, converlutionTool2, converlutionTool3,
+	converlutionTool4, converlutionTool5, converlutionTool6,
+	converlutionTool7, converlutionTool8, converlutionTool9;  //textbox
 int number;
 char    szText [241];
 unsigned char	*image	= NULL;			// image array
@@ -151,13 +153,42 @@ void showImage()
 	}
 }
 
-void process (unsigned char *ig1, long cx, long cy)
+void converlutionProcess (unsigned char *ig1, long cx, long cy)
 {
 	unsigned char	*ig2;
 	long			 x, y, m, n;
-	double			 h [3][3] = {{2,  2, 2},
-								 {2,  2, 2},
-								 {2,  2, 2}};
+	int				f1, f2, f3, f4, f5, f6, f7, f8, f9;
+
+	GetWindowText(converlutionTool1,szText,10);
+	f1 = atoi(szText);
+	
+	GetWindowText(converlutionTool2,szText,10);
+	f2 = atoi(szText);
+	
+	GetWindowText(converlutionTool3,szText,10);
+	f3 = atoi(szText);
+	
+	GetWindowText(converlutionTool4,szText,10);
+	f4 = atoi(szText);
+	
+	GetWindowText(converlutionTool5,szText,10);
+	f5 = atoi(szText);
+		
+	GetWindowText(converlutionTool6,szText,10);
+	f6 = atoi(szText);
+	
+	GetWindowText(converlutionTool7,szText,10);
+	f7 = atoi(szText);
+		
+	GetWindowText(converlutionTool8,szText,10);
+	f8 = atoi(szText);
+		
+	GetWindowText(converlutionTool9,szText,10);
+	f9 = atoi(szText);
+
+	double			 h [3][3] = {{f1,  f2, f3},
+								 {f4,  f5, f6},
+								 {f7,  f8, f9}};
 	double			 sum, nrm;
 
 	/*for (y = 0; y < cy; y ++)
@@ -362,6 +393,32 @@ int WINAPI saveDiarog()
     return 0;
 }
 
+void createConverlutionTool()
+{
+converlutionTool = CreateWindowEx(NULL,szWindowChildClass, "Converlution Tool",  WS_CAPTION | WS_SYSMENU ,CW_USEDEFAULT, CW_USEDEFAULT, 481, 192, NULL, NULL, NULL, NULL);
+					CreateWindow("BUTTON","Test",WS_CHILD | WS_VISIBLE,363,35,50,20,converlutionTool,(HMENU)IDM_OKCON,hInst,0);
+					CreateWindow("BUTTON","Save",WS_CHILD | WS_VISIBLE,363,73,50,20,converlutionTool,(HMENU)IDM_SAVECON,hInst,0);
+					CreateWindow("BUTTON","Cancle",WS_CHILD | WS_VISIBLE,363,115,50,20,converlutionTool,(HMENU)IDM_CANCLECON,hInst,0);
+converlutionTool1 = CreateWindow("EDIT","0",WS_CHILD | WS_VISIBLE |WS_BORDER,12,36,100,20,converlutionTool,(HMENU)IDM_CTEXT1,hInst,0);
+converlutionTool2 = CreateWindow("EDIT","0",WS_CHILD | WS_VISIBLE |WS_BORDER,118,36,100,20,converlutionTool,(HMENU)IDM_CTEXT2,hInst,0);
+converlutionTool3 = CreateWindow("EDIT","0",WS_CHILD | WS_VISIBLE |WS_BORDER,224,36,100,20,converlutionTool,(HMENU)IDM_CTEXT3,hInst,0);
+converlutionTool4 = CreateWindow("EDIT","0",WS_CHILD | WS_VISIBLE |WS_BORDER,12,74,100,20,converlutionTool,(HMENU)IDM_CTEXT4,hInst,0);
+converlutionTool5 = CreateWindow("EDIT","0",WS_CHILD | WS_VISIBLE |WS_BORDER,118,74,100,20,converlutionTool,(HMENU)IDM_CTEXT5,hInst,0);
+converlutionTool6 = CreateWindow("EDIT","0",WS_CHILD | WS_VISIBLE |WS_BORDER,224,74,100,20,converlutionTool,(HMENU)IDM_CTEXT6,hInst,0);
+converlutionTool7 = CreateWindow("EDIT","0",WS_CHILD | WS_VISIBLE |WS_BORDER,12,115,100,20,converlutionTool,(HMENU)IDM_CTEXT7,hInst,0);
+converlutionTool8 = CreateWindow("EDIT","0",WS_CHILD | WS_VISIBLE |WS_BORDER,118,115,100,20,converlutionTool,(HMENU)IDM_CTEXT8,hInst,0);
+converlutionTool9 = CreateWindow("EDIT","0",WS_CHILD | WS_VISIBLE |WS_BORDER,224,115,100,20,converlutionTool,(HMENU)IDM_CTEXT9,hInst,0);
+					ShowWindow(converlutionTool,number);
+					UpdateWindow(converlutionTool);
+}
+void paint(HWND hWnds)
+{
+	HDC         hdc;
+	hdc = GetDC (hWnds);
+	mydraw (hdc);
+	ReleaseDC (hWnds, hdc);
+}
+
 //
 //  FUNCTION: WndProc(HWND, unsigned, WORD, LONG)
 //
@@ -391,9 +448,7 @@ LRESULT CALLBACK WndProc (HWND hWnds, UINT message, WPARAM wParam, LPARAM lParam
 																		break;
 
 								case IDM_OPENFILE				:	openDiarog();
-																	hdc = GetDC (hWnds);
-																	mydraw (hdc);
-																	ReleaseDC (hWnds, hdc);
+																	paint(hWnds);
 																	CoTaskMemFree(filepath);
 																	SetWindowPos(hWnd,NULL,0,0,cx+16,cy+59,NULL);
 																	break;
@@ -403,18 +458,11 @@ LRESULT CALLBACK WndProc (HWND hWnds, UINT message, WPARAM wParam, LPARAM lParam
 								case IDM_EXIT					:   PostQuitMessage (0);
 																	break;
 								case IDM_CONVERLUTION			:	if(converlutionTool == NULL){
-									converlutionTool = CreateWindowEx(NULL,szWindowChildClass, "Converlution Tool",  WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, NULL, NULL);
-																		CreateWindow("BUTTON","USE",WS_CHILD | WS_VISIBLE,500,100,50,20,converlutionTool,(HMENU)IDM_OKCON,hInst,0);
-																		CreateWindow("BUTTON","Save",WS_CHILD | WS_VISIBLE,500,300,50,20,converlutionTool,(HMENU)IDM_SAVECON,hInst,0);
-																		CreateWindow("BUTTON","Cancle",WS_CHILD | WS_VISIBLE,500,150,50,20,converlutionTool,(HMENU)IDM_CANCLECON,hInst,0);
-																		ShowWindow(converlutionTool,number);
-																		UpdateWindow(converlutionTool);
+																		createConverlutionTool();
 																	}
 																	break;
-								case IDM_OKCON					:	process (grey1, cx, cy);
-																	hdc = GetDC (hWnd);
-																	mydraw (hdc);
-																	ReleaseDC (hWnd, hdc);
+								case IDM_OKCON					:	converlutionProcess (grey1, cx, cy);
+																	paint(hWnd);
 																	break;
 								case IDM_CANCLECON				:	grey1	= (unsigned char *) malloc (cx*cy);
 																	for (y = 0; y < cy; y ++)
@@ -425,9 +473,7 @@ LRESULT CALLBACK WndProc (HWND hWnds, UINT message, WPARAM wParam, LPARAM lParam
 																		}
 																	}
 																	showImage ();
-																	hdc = GetDC (hWnd);
-																	mydraw (hdc);
-																	ReleaseDC (hWnd, hdc);
+																	paint(hWnd);
 																	break;
 								case IDM_SAVECON				:	imageMaster = (unsigned char *) malloc (cx*cy);
 																	for (y = 0; y < cy; y ++)
@@ -437,9 +483,7 @@ LRESULT CALLBACK WndProc (HWND hWnds, UINT message, WPARAM wParam, LPARAM lParam
 																			imageMaster [y*cx + x] = grey1 [y*cx + x];
 																		}
 																	}
-																	hdc = GetDC (hWnd);
-																	mydraw (hdc);
-																	ReleaseDC (hWnd, hdc);
+																	paint(hWnd);
 																	break;
 								default					         :   
 																	return DefWindowProc(hWnds, message, wParam, lParam);
