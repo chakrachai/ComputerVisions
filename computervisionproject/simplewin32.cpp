@@ -153,6 +153,89 @@ void showImage()
 	}
 }
 
+void noiseProcess(unsigned char *ig1, long cx, long cy,boolean status){
+	
+	unsigned char	*ig2;
+	long			 x, y,m,n;
+	long			xpixel = 303, ypixel = 106 , swapig1 , swapig2 ,swapx, swapy, swapm, swapn,swap;
+	double			sum = 0,t = 100,medean[9];
+	int				count = 0,round;
+	double			 h [3][3] = {{1,  1, 1},
+								 {1,   1, 1},
+								 {1,  1, 1}};
+	double			 nrm;
+
+	ig2 = (unsigned char *) malloc (cx*cy);
+	for (y = 0; y < cy; y ++)
+	{
+		for (x = 0; x < cx; x ++)
+		{
+			ig2 [y*cx + x] = ig1 [y*cx + x];
+		}
+	}
+
+	if(status){
+		for (y = 1; y < cy - 1; y ++)
+		{
+			for (x = 1; x < cx - 1; x ++)
+			{
+				sum = 0.0;
+				nrm = 0.0;
+				for (n = -1; n <= 1; n ++)
+				{
+					for (m = -1; m <= 1; m ++)
+					{
+						sum += h [n+1][m+1]*ig2 [(y+n)*cx + (x+m)];
+						nrm += h [n+1][m+1] < 0.0 ? -h [n+1][m+1] : h [n+1][m+1];
+					}
+				}
+				ig1 [y*cx + x] = (int) ((sum < 0.0 ? -sum : sum)/nrm);
+			}
+		}
+	}else{
+		for (y = 1; y < cy - 1; y ++)
+		{
+			for (x = 1; x < cx - 1; x ++)
+			{
+				sum = 0.0;
+				nrm = 0.0;
+				for (n = -1; n <= 1; n ++)
+				{
+					for (m = -1; m <= 1; m ++)
+					{
+					
+						sum += h [n+1][m+1]*ig2 [(y+n)*cx + (x+m)];
+						nrm += h [n+1][m+1] < 0.0 ? -h [n+1][m+1] : h [n+1][m+1];
+
+						//mean
+						medean[count] = (h [n+1][m+1]*ig2 [(y+n)*cx + (x+m)] < 0.0 ? h [n+1][m+1]*ig2 [(y+n)*cx + (x+m)]*(-1) : h [n+1][m+1]*ig2 [(y+n)*cx + (x+m)]);
+						//medean
+						count++;
+					}
+				}
+				count = 0;
+				for(round = 0 ; round < 19 ; round ++)
+				{
+					for(count = 0 ; count < 8 ; count ++)
+					{
+						if(medean[count] > medean[count+1]){
+							swap = medean[count] ;
+							medean[count] = medean[count+1];
+							medean[count+1] = swap;
+						}
+					}
+				}
+				//ig1 [y*cx + x] = (int) ((sum < 0.0 ? -sum : sum)/nrm); //sum = sum*-1 >>mean
+			
+				ig1 [y*cx + x] = (int) medean[4]; //medean
+				count = 0;
+			}
+		}
+	}
+	showImage();
+	free (ig2);
+}
+
 void converlutionProcess (unsigned char *ig1, long cx, long cy)
 {
 	unsigned char	*ig2;
@@ -435,6 +518,7 @@ LRESULT CALLBACK WndProc (HWND hWnds, UINT message, WPARAM wParam, LPARAM lParam
     PAINTSTRUCT ps;
     HDC         hdc;
 	long		y,x;
+	boolean		status;
 
     switch (message) 
     {
@@ -485,6 +569,15 @@ LRESULT CALLBACK WndProc (HWND hWnds, UINT message, WPARAM wParam, LPARAM lParam
 																	}
 																	paint(hWnd);
 																	break;
+
+								case IDM_MEAN					:	noiseProcess(grey1, cx, cy,true);
+																	paint(hWnd);
+																	break;
+
+								case IDM_MEDIAN					:	noiseProcess(grey1, cx, cy,false);
+																	paint(hWnd);
+																	break;
+
 								default					         :   
 																	return DefWindowProc(hWnds, message, wParam, lParam);
                             }

@@ -31,7 +31,11 @@ BEGIN
     END
     POPUP "&Tool"
     BEGIN
-        MENUITEM "&Noise",                IDM_NOISE
+        POPUP "&Noise"
+            BEGIN
+            MENUITEM "&Mean",                IDM_MEAN
+            MENUITEM "&Median",              IDM_MEDIAN
+        END               
         MENUITEM "&Converlution Mask",    IDM_CONVERLUTION
         MENUITEM "Relaxation Labeling",   IDM_RL
     END

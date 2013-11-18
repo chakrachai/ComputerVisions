@@ -26,3 +26,6 @@
 #define IDM_CTEXT7				3014
 #define IDM_CTEXT8				3015
 #define IDM_CTEXT9				3016
+#define IDM_MEAN				3017
+#define	IDM_MEDIAN				3018
+
