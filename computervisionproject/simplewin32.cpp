@@ -429,7 +429,18 @@ LRESULT CALLBACK WndProc (HWND hWnds, UINT message, WPARAM wParam, LPARAM lParam
 																	mydraw (hdc);
 																	ReleaseDC (hWnd, hdc);
 																	break;
-                                                       
+								case IDM_SAVECON				:	imageMaster = (unsigned char *) malloc (cx*cy);
+																	for (y = 0; y < cy; y ++)
+																	{
+																		for (x = 0; x < cx; x ++)
+																		{
+																			imageMaster [y*cx + x] = grey1 [y*cx + x];
+																		}
+																	}
+																	hdc = GetDC (hWnd);
+																	mydraw (hdc);
+																	ReleaseDC (hWnd, hdc);
+																	break;
 								default					         :   
 																	return DefWindowProc(hWnds, message, wParam, lParam);
                             }
