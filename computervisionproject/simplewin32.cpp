@@ -406,7 +406,7 @@ LRESULT CALLBACK WndProc (HWND hWnds, UINT message, WPARAM wParam, LPARAM lParam
 								case IDM_EXIT					:   PostQuitMessage (0);
 																	break;
 								case IDM_CONVERLUTION			:	if(converlutionTool == NULL){
-									converlutionTool = CreateWindowEx(NULL,szWindowChildClass, "Converlution Tool", WS_OVERLAPPEDWINDOW,0, 0, 640, 480, NULL, NULL, NULL, NULL);
+									converlutionTool = CreateWindowEx(NULL,szWindowChildClass, "Converlution Tool",  WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,0, 0, 640, 480, NULL, NULL, NULL, NULL);
 																		CreateWindow("BUTTON","ok",WS_CHILD | WS_VISIBLE,500,100,50,20,converlutionTool,(HMENU)IDM_OKCON,hInst,0);
 																		CreateWindow("BUTTON","cancle",WS_CHILD | WS_VISIBLE,500,150,50,20,converlutionTool,(HMENU)2435,hInst,0);
 																		ShowWindow(converlutionTool,number);
