@@ -11,3 +11,7 @@
 #define IDR_MAINFRAME            128
 #define IDM_SAVEFILE			3000
 #define IDM_OPENFILE			3001
+#define IDM_NOISE				3002
+#define IDM_CONVERLUTION		3003
+#define IDM_RL					3004
+#define IDM_OKCON				3005

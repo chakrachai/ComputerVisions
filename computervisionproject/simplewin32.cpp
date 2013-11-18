@@ -7,12 +7,14 @@
 
 // Global Variables:
 HINSTANCE   hInst;                          // current instance
+HINSTANCE   hInstt;
 char        szTitle [MAX_LOADSTRING];       // The title bar text
 char        szWindowClass [MAX_LOADSTRING]; // the main window class name
-
+char        szWindowChildClass [MAX_LOADSTRING];
 // Forward declarations of functions included in this code module:
 ATOM                    RegisterMainClass (HINSTANCE hInstance);
 BOOL                    InitInstance (HINSTANCE, int);
+BOOL					RegisteChildClass(HINSTANCE, int);
 LRESULT CALLBACK        WndProc (HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK        About (HWND, UINT, WPARAM, LPARAM);
 
@@ -37,6 +39,7 @@ int APIENTRY _tWinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
     // Initialize global strings
     strcpy (szTitle, "Computer Vision Programming Ex. 1");
     strcpy (szWindowClass, "simplewin32");
+	strcpy (szWindowChildClass, "simplewin32Child");
     RegisterMainClass (hInstance);
 
     // Perform application initialization:
@@ -45,6 +48,10 @@ int APIENTRY _tWinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
         return FALSE;
     }
 
+	if (!RegisteChildClass (hInstance, nCmdShow)) 
+    {
+        return FALSE;
+    }
     hAccelTable = LoadAccelerators (hInstance, MAKEINTRESOURCE (IDC_SIMPLEWIN32));
 
     // Main message loop:
@@ -60,11 +67,9 @@ int APIENTRY _tWinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
     return (int) msg.wParam;
 }
 
-
-
 ATOM RegisterMainClass (HINSTANCE hInstance)
 {
-    WNDCLASSEX  wcex;
+    WNDCLASSEX  wcex,wcext;
 
     wcex.cbSize = sizeof (WNDCLASSEX); 
 
@@ -79,8 +84,29 @@ ATOM RegisterMainClass (HINSTANCE hInstance)
     wcex.lpszMenuName       = (LPCTSTR) IDC_SIMPLEWIN32;
     wcex.lpszClassName      = szWindowClass;
     wcex.hIconSm            = LoadIcon (wcex.hInstance, (LPCTSTR) IDI_SMALL);
-
     return RegisterClassEx (&wcex);
+}
+
+BOOL RegisteChildClass (HINSTANCE hInstance ,int nCmdShow)
+{
+    WNDCLASSEX  wcex;
+
+    wcex.cbSize = sizeof (WNDCLASSEX); 
+
+    wcex.style              = CS_HREDRAW | CS_VREDRAW;
+    wcex.lpfnWndProc        = (WNDPROC)WndProc;
+    wcex.cbClsExtra         = 0;
+    wcex.cbWndExtra         = 0;
+    wcex.hInstance          = hInstance;
+    wcex.hIcon              = LoadIcon (hInstance, (LPCTSTR) IDI_SIMPLEWIN32);
+    wcex.hCursor            = LoadCursor (NULL, IDC_ARROW);
+    wcex.hbrBackground      = (HBRUSH) (COLOR_WINDOW+1);
+    wcex.lpszMenuName       = NULL;
+    wcex.lpszClassName      = szWindowChildClass;
+    wcex.hIconSm            = LoadIcon (wcex.hInstance, (LPCTSTR) IDI_SMALL);
+	if(!RegisterClassEx (&wcex)){
+		return FALSE;
+	}
 }
 
 BOOL InitInstance (HINSTANCE hInstance, int nCmdShow)
@@ -89,8 +115,6 @@ BOOL InitInstance (HINSTANCE hInstance, int nCmdShow)
     hInst   = hInstance; // Store instance handle in our global variable
     hWnd    = CreateWindow (szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
                             0, 0, 640, 480, NULL, NULL, hInstance, NULL);
-
-	CreateWindow("BUTTON","conver",WS_CHILD | WS_VISIBLE,500,100,50,20,hWnd,(HMENU)2425,hInst,0);
 	number = nCmdShow;
 
    // hWndText = CreateWindow ("STATIC", "0", WS_CHILD | WS_BORDER | WS_VISIBLE | SS_RIGHT,10, 10, 155, 20, hWnd, NULL, hInstance, NULL);
@@ -366,37 +390,37 @@ LRESULT CALLBACK WndProc (HWND hWnds, UINT message, WPARAM wParam, LPARAM lParam
                             // Parse the menu selections:
                             switch (wmId)
                             {
-							case IDM_ABOUT  :   DialogBox (hInst, (LPCTSTR) IDD_ABOUTBOX, hWnds, (DLGPROC) About);
-                                                    break;
+								case IDM_ABOUT					:   DialogBox (hInst, (LPCTSTR) IDD_ABOUTBOX, hWnds, (DLGPROC) About);
+																		break;
 
-								case IDM_OPENFILE   :	openDiarog();
-														hdc = GetDC (hWnds);
-														mydraw (hdc);
-														ReleaseDC (hWnds, hdc);
-														CoTaskMemFree(filepath);
-														SetWindowPos(hWnd,0,0,0,cx+16,cy+59,0);
-														break;
-								case IDM_SAVEFILE	:	saveDiarog();
-														break;
+								case IDM_OPENFILE				:	openDiarog();
+																	hdc = GetDC (hWnds);
+																	mydraw (hdc);
+																	ReleaseDC (hWnds, hdc);
+																	CoTaskMemFree(filepath);
+																	SetWindowPos(hWnd,0,0,0,cx+16,cy+59,0);
+																	break;
+								case IDM_SAVEFILE				:	saveDiarog();
+																	break;
 								
-								case IDM_EXIT		:   PostQuitMessage (0);
-														break;
-								case 2425			:	if(converlutionTool == NULL){
-															converlutionTool = CreateWindowEx(NULL,szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,0, 0, 640, 480, NULL, NULL, NULL, NULL);
-															CreateWindow("BUTTON","ok",WS_CHILD | WS_VISIBLE,500,100,50,20,converlutionTool,(HMENU)2430,hInst,0);
-															CreateWindow("BUTTON","cancle",WS_CHILD | WS_VISIBLE,500,150,50,20,converlutionTool,(HMENU)2435,hInst,0);
-															ShowWindow(converlutionTool,number);
-															UpdateWindow(converlutionTool);
-														}
-														break;
-								case 2430			:	process (grey1, cx, cy);
-														hdc = GetDC (hWnd);
-														mydraw (hdc);
-														ReleaseDC (hWnd, hdc);
-														break;
+								case IDM_EXIT					:   PostQuitMessage (0);
+																	break;
+								case IDM_CONVERLUTION			:	if(converlutionTool == NULL){
+									converlutionTool = CreateWindowEx(NULL,szWindowChildClass, "Converlution Tool", WS_OVERLAPPEDWINDOW,0, 0, 640, 480, NULL, NULL, NULL, NULL);
+																		CreateWindow("BUTTON","ok",WS_CHILD | WS_VISIBLE,500,100,50,20,converlutionTool,(HMENU)IDM_OKCON,hInst,0);
+																		CreateWindow("BUTTON","cancle",WS_CHILD | WS_VISIBLE,500,150,50,20,converlutionTool,(HMENU)2435,hInst,0);
+																		ShowWindow(converlutionTool,number);
+																		UpdateWindow(converlutionTool);
+																	}
+																	break;
+								case IDM_OKCON					:	process (grey1, cx, cy);
+																	hdc = GetDC (hWnd);
+																	mydraw (hdc);
+																	ReleaseDC (hWnd, hdc);
+																	break;
                                                        
-                                default         :   
-                                                    return DefWindowProc(hWnds, message, wParam, lParam);
+								default					         :   
+																	return DefWindowProc(hWnds, message, wParam, lParam);
                             }
                             break;
 
