@@ -9,17 +9,24 @@
 HINSTANCE   hInst;                          // current instance
 char        szTitle [MAX_LOADSTRING];       // The title bar text
 char        szWindowClass [MAX_LOADSTRING]; // the main window class name
-
+char        szWindowChildClass [MAX_LOADSTRING];
 // Forward declarations of functions included in this code module:
 ATOM                    RegisterMainClass (HINSTANCE hInstance);
 BOOL                    InitInstance (HINSTANCE, int);
+BOOL					RegisteChildClass(HINSTANCE, int);
 LRESULT CALLBACK        WndProc (HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK        About (HWND, UINT, WPARAM, LPARAM);
 
 HWND    hWndText;
+HWND hWnd, converlutionTool;
+HWND converlutionTool1, converlutionTool2, converlutionTool3,
+	converlutionTool4, converlutionTool5, converlutionTool6,
+	converlutionTool7, converlutionTool8, converlutionTool9;  //textbox
+int number;
 char    szText [241];
 unsigned char	*image	= NULL;			// image array
 unsigned char	*grey1	= NULL;
+unsigned char	*imageMaster	= NULL;
 long			 bpp, cx = 0, cy = 0;	// image dimension
 LPOLESTR		filepath;
 BITMAPFILEHEADER	 bf;
@@ -35,6 +42,7 @@ int APIENTRY _tWinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
     // Initialize global strings
     strcpy (szTitle, "Computer Vision Programming Ex. 1");
     strcpy (szWindowClass, "simplewin32");
+	strcpy (szWindowChildClass, "simplewin32Child");
     RegisterMainClass (hInstance);
 
     // Perform application initialization:
@@ -43,6 +51,10 @@ int APIENTRY _tWinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
         return FALSE;
     }
 
+	if (!RegisteChildClass (hInstance, nCmdShow)) 
+    {
+        return FALSE;
+    }
     hAccelTable = LoadAccelerators (hInstance, MAKEINTRESOURCE (IDC_SIMPLEWIN32));
 
     // Main message loop:
@@ -60,7 +72,7 @@ int APIENTRY _tWinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 ATOM RegisterMainClass (HINSTANCE hInstance)
 {
-    WNDCLASSEX  wcex;
+    WNDCLASSEX  wcex,wcext;
 
     wcex.cbSize = sizeof (WNDCLASSEX); 
 
@@ -75,20 +87,40 @@ ATOM RegisterMainClass (HINSTANCE hInstance)
     wcex.lpszMenuName       = (LPCTSTR) IDC_SIMPLEWIN32;
     wcex.lpszClassName      = szWindowClass;
     wcex.hIconSm            = LoadIcon (wcex.hInstance, (LPCTSTR) IDI_SMALL);
-
     return RegisterClassEx (&wcex);
+}
+
+BOOL RegisteChildClass (HINSTANCE hInstance ,int nCmdShow)
+{
+    WNDCLASSEX  wcex;
+
+    wcex.cbSize = sizeof (WNDCLASSEX); 
+
+    wcex.style              = CS_HREDRAW | CS_VREDRAW;
+    wcex.lpfnWndProc        = (WNDPROC)WndProc;
+    wcex.cbClsExtra         = 0;
+    wcex.cbWndExtra         = 0;
+    wcex.hInstance          = hInstance;
+    wcex.hIcon              = LoadIcon (hInstance, (LPCTSTR) IDI_SIMPLEWIN32);
+    wcex.hCursor            = LoadCursor (NULL, IDC_ARROW);
+    wcex.hbrBackground      = (HBRUSH) (COLOR_WINDOW+1);
+    wcex.lpszMenuName       = NULL;
+    wcex.lpszClassName      = szWindowChildClass;
+    wcex.hIconSm            = LoadIcon (wcex.hInstance, (LPCTSTR) IDI_SMALL);
+	if(!RegisterClassEx (&wcex)){
+		return FALSE;
+	}
 }
 
 BOOL InitInstance (HINSTANCE hInstance, int nCmdShow)
 {
-    HWND hWnd;
 
     hInst   = hInstance; // Store instance handle in our global variable
     hWnd    = CreateWindow (szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-                            0, 0, 640, 480, NULL, NULL, hInstance, NULL);
+                            CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
+	number = nCmdShow;
 
-//    hWndText = CreateWindow ("STATIC", "0", WS_CHILD | WS_BORDER | WS_VISIBLE | SS_RIGHT,
-//               10, 10, 155, 20, hWnd, NULL, hInstance, NULL);
+   // hWndText = CreateWindow ("STATIC", "0", WS_CHILD | WS_BORDER | WS_VISIBLE | SS_RIGHT,10, 10, 155, 20, hWnd, NULL, hInstance, NULL);
     if (!hWnd)
     {
         return FALSE;
@@ -107,17 +139,59 @@ void mydraw (HDC hdc)
 	SetDIBitsToDevice (hdc, 0, 0, cx, cy, 0, 0, 0, cy, 
 					   image, &bi, DIB_RGB_COLORS);
 }
+void showImage()
+{
+	long line ,x ;
+	for (line = 0; line < cy; line ++)
+	{
+		for (x = 0; x < cx; x ++)
+		{
+			image [bpp*(line*cx + x) + 0] = grey1 [x + line*cx];
+			image [bpp*(line*cx + x) + 1] = grey1 [x + line*cx];
+			image [bpp*(line*cx + x) + 2] = grey1 [x + line*cx];
+		}
+	}
+}
 
-void process (unsigned char *ig1, long cx, long cy)
+void converlutionProcess (unsigned char *ig1, long cx, long cy)
 {
 	unsigned char	*ig2;
 	long			 x, y, m, n;
-	double			 h [3][3] = {{2,  2, 2},
-								 {2,  2, 2},
-								 {2,  2, 2}};
+	int				f1, f2, f3, f4, f5, f6, f7, f8, f9;
+
+	GetWindowText(converlutionTool1,szText,10);
+	f1 = atoi(szText);
+	
+	GetWindowText(converlutionTool2,szText,10);
+	f2 = atoi(szText);
+	
+	GetWindowText(converlutionTool3,szText,10);
+	f3 = atoi(szText);
+	
+	GetWindowText(converlutionTool4,szText,10);
+	f4 = atoi(szText);
+	
+	GetWindowText(converlutionTool5,szText,10);
+	f5 = atoi(szText);
+		
+	GetWindowText(converlutionTool6,szText,10);
+	f6 = atoi(szText);
+	
+	GetWindowText(converlutionTool7,szText,10);
+	f7 = atoi(szText);
+		
+	GetWindowText(converlutionTool8,szText,10);
+	f8 = atoi(szText);
+		
+	GetWindowText(converlutionTool9,szText,10);
+	f9 = atoi(szText);
+
+	double			 h [3][3] = {{f1,  f2, f3},
+								 {f4,  f5, f6},
+								 {f7,  f8, f9}};
 	double			 sum, nrm;
 
-	for (y = 0; y < cy; y ++)
+	/*for (y = 0; y < cy; y ++)
 	{
 		for (x = 0; x < cx; x ++)
 		{
@@ -125,8 +199,8 @@ void process (unsigned char *ig1, long cx, long cy)
 				ig1 [x + y*cx] = 0;
 		}
 	}
+	*/
 
-/*
 	ig2 = (unsigned char *) malloc (cx*cy);
 	for (y = 0; y < cy; y ++)
 	{
@@ -153,9 +227,9 @@ void process (unsigned char *ig1, long cx, long cy)
 			ig1 [y*cx + x] = (int) ((sum < 0.0 ? -sum : sum)/nrm);
 		}
 	}
-
+	showImage();
 	free (ig2);
-*/
+
 }
 
 void loadfile (LPOLESTR lpszpath)
@@ -172,6 +246,7 @@ void loadfile (LPOLESTR lpszpath)
 	bpp		= bi.bmiHeader.biBitCount/8;
 	image	= (unsigned char *) malloc (cx*cy*bpp);
 	grey1	= (unsigned char *) malloc (cx*cy);
+	imageMaster = (unsigned char *) malloc (cx*cy);
 
 	for (line = 0; line < cy; line ++) {
 		fread (image + line*bpp*cx, 1, bpp*cx, fp);
@@ -183,26 +258,20 @@ void loadfile (LPOLESTR lpszpath)
 			r = image [bpp*(line*cx + x) + 2];
 
 			grey1 [x + line*cx] = (int) (0.5*r+0.2*g+0.3*b);
+			imageMaster [x + line*cx] = (int) (0.5*r+0.2*g+0.3*b);
 		}
 	}
-
-	process (grey1, cx, cy);
-
-	for (line = 0; line < cy; line ++)
-	{
-		for (x = 0; x < cx; x ++)
-		{
-			image [bpp*(line*cx + x) + 0] = grey1 [x + line*cx];
-			image [bpp*(line*cx + x) + 1] = grey1 [x + line*cx];
-			image [bpp*(line*cx + x) + 2] = grey1 [x + line*cx];
-		}
-	}
-
+	showImage();
 	fclose (fp);
 }
 
 int WINAPI openDiarog()
 {
+	long line,x;
+	PAINTSTRUCT ps;
+    HDC         hdc;
+
+
     HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
     if (SUCCEEDED(hr))
     {
@@ -239,8 +308,6 @@ int WINAPI openDiarog()
                     // Display the file name to the user.
                     if (SUCCEEDED(hr))
                     {
-
-						MessageBoxW(NULL, filepath, L"File Path", MB_OK);
 						loadfile(filepath);
 
                     }
@@ -259,7 +326,6 @@ int WINAPI saveDiarog()
 
 	FILE				*fout;
 	long				px,py;
-
     HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
     if (SUCCEEDED(hr))
     {
@@ -327,6 +393,32 @@ int WINAPI saveDiarog()
     return 0;
 }
 
+void createConverlutionTool()
+{
+converlutionTool = CreateWindowEx(NULL,szWindowChildClass, "Converlution Tool",  WS_CAPTION | WS_SYSMENU ,CW_USEDEFAULT, CW_USEDEFAULT, 481, 192, NULL, NULL, NULL, NULL);
+					CreateWindow("BUTTON","Test",WS_CHILD | WS_VISIBLE,363,35,50,20,converlutionTool,(HMENU)IDM_OKCON,hInst,0);
+					CreateWindow("BUTTON","Save",WS_CHILD | WS_VISIBLE,363,73,50,20,converlutionTool,(HMENU)IDM_SAVECON,hInst,0);
+					CreateWindow("BUTTON","Cancle",WS_CHILD | WS_VISIBLE,363,115,50,20,converlutionTool,(HMENU)IDM_CANCLECON,hInst,0);
+converlutionTool1 = CreateWindow("EDIT","0",WS_CHILD | WS_VISIBLE |WS_BORDER,12,36,100,20,converlutionTool,(HMENU)IDM_CTEXT1,hInst,0);
+converlutionTool2 = CreateWindow("EDIT","0",WS_CHILD | WS_VISIBLE |WS_BORDER,118,36,100,20,converlutionTool,(HMENU)IDM_CTEXT2,hInst,0);
+converlutionTool3 = CreateWindow("EDIT","0",WS_CHILD | WS_VISIBLE |WS_BORDER,224,36,100,20,converlutionTool,(HMENU)IDM_CTEXT3,hInst,0);
+converlutionTool4 = CreateWindow("EDIT","0",WS_CHILD | WS_VISIBLE |WS_BORDER,12,74,100,20,converlutionTool,(HMENU)IDM_CTEXT4,hInst,0);
+converlutionTool5 = CreateWindow("EDIT","0",WS_CHILD | WS_VISIBLE |WS_BORDER,118,74,100,20,converlutionTool,(HMENU)IDM_CTEXT5,hInst,0);
+converlutionTool6 = CreateWindow("EDIT","0",WS_CHILD | WS_VISIBLE |WS_BORDER,224,74,100,20,converlutionTool,(HMENU)IDM_CTEXT6,hInst,0);
+converlutionTool7 = CreateWindow("EDIT","0",WS_CHILD | WS_VISIBLE |WS_BORDER,12,115,100,20,converlutionTool,(HMENU)IDM_CTEXT7,hInst,0);
+converlutionTool8 = CreateWindow("EDIT","0",WS_CHILD | WS_VISIBLE |WS_BORDER,118,115,100,20,converlutionTool,(HMENU)IDM_CTEXT8,hInst,0);
+converlutionTool9 = CreateWindow("EDIT","0",WS_CHILD | WS_VISIBLE |WS_BORDER,224,115,100,20,converlutionTool,(HMENU)IDM_CTEXT9,hInst,0);
+					ShowWindow(converlutionTool,number);
+					UpdateWindow(converlutionTool);
+}
+void paint(HWND hWnds)
+{
+	HDC         hdc;
+	hdc = GetDC (hWnds);
+	mydraw (hdc);
+	ReleaseDC (hWnds, hdc);
+}
+
 //
 //  FUNCTION: WndProc(HWND, unsigned, WORD, LONG)
 //
@@ -337,11 +429,12 @@ int WINAPI saveDiarog()
 //  WM_DESTROY  - post a quit message and return
 //
 //
-LRESULT CALLBACK WndProc (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK WndProc (HWND hWnds, UINT message, WPARAM wParam, LPARAM lParam)
 {
     int         wmId, wmEvent;
     PAINTSTRUCT ps;
     HDC         hdc;
+	long		y,x;
 
     switch (message) 
     {
@@ -351,36 +444,69 @@ LRESULT CALLBACK WndProc (HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                             // Parse the menu selections:
                             switch (wmId)
                             {
-                                case IDM_ABOUT  :   DialogBox (hInst, (LPCTSTR) IDD_ABOUTBOX, hWnd, (DLGPROC) About);
-                                                    break;
+								case IDM_ABOUT					:   DialogBox (hInst, (LPCTSTR) IDD_ABOUTBOX, hWnds, (DLGPROC) About);
+																		break;
 
-								case IDM_OPENFILE   :	openDiarog();
-														loadfile(filepath);
-														hdc = GetDC (hWnd);
-														CoTaskMemFree(filepath);
-														mydraw (hdc);
-														ReleaseDC (hWnd, hdc);
-														break;
-								case IDM_SAVEFILE	:	saveDiarog();
-														break;
+								case IDM_OPENFILE				:	openDiarog();
+																	paint(hWnds);
+																	CoTaskMemFree(filepath);
+																	SetWindowPos(hWnd,NULL,0,0,cx+16,cy+59,NULL);
+																	break;
+								case IDM_SAVEFILE				:	saveDiarog();
+																	break;
 								
-								case IDM_EXIT		:   PostQuitMessage (0);
-													break;
-                                                       
-                                default         :   
-                                                    return DefWindowProc(hWnd, message, wParam, lParam);
+								case IDM_EXIT					:   PostQuitMessage (0);
+																	break;
+								case IDM_CONVERLUTION			:	if(converlutionTool == NULL){
+																		createConverlutionTool();
+																	}
+																	break;
+								case IDM_OKCON					:	converlutionProcess (grey1, cx, cy);
+																	paint(hWnd);
+																	break;
+								case IDM_CANCLECON				:	grey1	= (unsigned char *) malloc (cx*cy);
+																	for (y = 0; y < cy; y ++)
+																	{
+																		for (x = 0; x < cx; x ++)
+																		{
+																			grey1 [y*cx + x] = imageMaster [y*cx + x];
+																		}
+																	}
+																	showImage ();
+																	paint(hWnd);
+																	break;
+								case IDM_SAVECON				:	imageMaster = (unsigned char *) malloc (cx*cy);
+																	for (y = 0; y < cy; y ++)
+																	{
+																		for (x = 0; x < cx; x ++)
+																		{
+																			imageMaster [y*cx + x] = grey1 [y*cx + x];
+																		}
+																	}
+																	paint(hWnd);
+																	break;
+								default					         :   
+																	return DefWindowProc(hWnds, message, wParam, lParam);
                             }
                             break;
 
-        case WM_PAINT   :   hdc = BeginPaint (hWnd, &ps);
-                            mydraw (hdc);
-                            EndPaint (hWnd, &ps);
+        case WM_PAINT   :    if(hWnds != converlutionTool){
+								hdc = BeginPaint (hWnds, &ps);
+								mydraw (hdc);
+								EndPaint (hWnds, &ps);
+							 }
                             break;
 
-        case WM_DESTROY :   PostQuitMessage (0);
-                            break;
+		case WM_DESTROY : 	if(hWnds == converlutionTool){
+								DestroyWindow(hWnds);
+								converlutionTool = NULL;
+							}else{
+								PostQuitMessage (0);
+							}
 
-        default         :   return DefWindowProc (hWnd, message, wParam, lParam);
+							break;
+
+        default         :   return DefWindowProc (hWnds, message, wParam, lParam);
     }
     return 0;
 }
