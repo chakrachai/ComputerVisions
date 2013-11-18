@@ -24,6 +24,7 @@ int number;
 char    szText [241];
 unsigned char	*image	= NULL;			// image array
 unsigned char	*grey1	= NULL;
+unsigned char	*imageMaster	= NULL;
 long			 bpp, cx = 0, cy = 0;	// image dimension
 LPOLESTR		filepath;
 BITMAPFILEHEADER	 bf;
@@ -114,7 +115,7 @@ BOOL InitInstance (HINSTANCE hInstance, int nCmdShow)
 
     hInst   = hInstance; // Store instance handle in our global variable
     hWnd    = CreateWindow (szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-                            0, 0, 640, 480, NULL, NULL, hInstance, NULL);
+                            CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
 	number = nCmdShow;
 
    // hWndText = CreateWindow ("STATIC", "0", WS_CHILD | WS_BORDER | WS_VISIBLE | SS_RIGHT,10, 10, 155, 20, hWnd, NULL, hInstance, NULL);
@@ -136,11 +137,24 @@ void mydraw (HDC hdc)
 	SetDIBitsToDevice (hdc, 0, 0, cx, cy, 0, 0, 0, cy, 
 					   image, &bi, DIB_RGB_COLORS);
 }
+void showImage()
+{
+	long line ,x ;
+	for (line = 0; line < cy; line ++)
+	{
+		for (x = 0; x < cx; x ++)
+		{
+			image [bpp*(line*cx + x) + 0] = grey1 [x + line*cx];
+			image [bpp*(line*cx + x) + 1] = grey1 [x + line*cx];
+			image [bpp*(line*cx + x) + 2] = grey1 [x + line*cx];
+		}
+	}
+}
 
 void process (unsigned char *ig1, long cx, long cy)
 {
 	unsigned char	*ig2;
-	long			 x, y, m, n , line;
+	long			 x, y, m, n;
 	double			 h [3][3] = {{2,  2, 2},
 								 {2,  2, 2},
 								 {2,  2, 2}};
@@ -182,17 +196,7 @@ void process (unsigned char *ig1, long cx, long cy)
 			ig1 [y*cx + x] = (int) ((sum < 0.0 ? -sum : sum)/nrm);
 		}
 	}
-
-	for (line = 0; line < cy; line ++)
-	{
-		for (x = 0; x < cx; x ++)
-		{
-			image [bpp*(line*cx + x) + 0] = grey1 [x + line*cx];
-			image [bpp*(line*cx + x) + 1] = grey1 [x + line*cx];
-			image [bpp*(line*cx + x) + 2] = grey1 [x + line*cx];
-		}
-	}
-
+	showImage();
 	free (ig2);
 
 }
@@ -211,6 +215,7 @@ void loadfile (LPOLESTR lpszpath)
 	bpp		= bi.bmiHeader.biBitCount/8;
 	image	= (unsigned char *) malloc (cx*cy*bpp);
 	grey1	= (unsigned char *) malloc (cx*cy);
+	imageMaster = (unsigned char *) malloc (cx*cy);
 
 	for (line = 0; line < cy; line ++) {
 		fread (image + line*bpp*cx, 1, bpp*cx, fp);
@@ -222,19 +227,10 @@ void loadfile (LPOLESTR lpszpath)
 			r = image [bpp*(line*cx + x) + 2];
 
 			grey1 [x + line*cx] = (int) (0.5*r+0.2*g+0.3*b);
+			imageMaster [x + line*cx] = (int) (0.5*r+0.2*g+0.3*b);
 		}
 	}
-
-	for (line = 0; line < cy; line ++)
-	{
-		for (x = 0; x < cx; x ++)
-		{
-			image [bpp*(line*cx + x) + 0] = grey1 [x + line*cx];
-			image [bpp*(line*cx + x) + 1] = grey1 [x + line*cx];
-			image [bpp*(line*cx + x) + 2] = grey1 [x + line*cx];
-		}
-	}
-
+	showImage();
 	fclose (fp);
 }
 
@@ -381,6 +377,7 @@ LRESULT CALLBACK WndProc (HWND hWnds, UINT message, WPARAM wParam, LPARAM lParam
     int         wmId, wmEvent;
     PAINTSTRUCT ps;
     HDC         hdc;
+	long		y,x;
 
     switch (message) 
     {
@@ -398,7 +395,7 @@ LRESULT CALLBACK WndProc (HWND hWnds, UINT message, WPARAM wParam, LPARAM lParam
 																	mydraw (hdc);
 																	ReleaseDC (hWnds, hdc);
 																	CoTaskMemFree(filepath);
-																	SetWindowPos(hWnd,0,0,0,cx+16,cy+59,0);
+																	SetWindowPos(hWnd,NULL,0,0,cx+16,cy+59,NULL);
 																	break;
 								case IDM_SAVEFILE				:	saveDiarog();
 																	break;
@@ -406,14 +403,28 @@ LRESULT CALLBACK WndProc (HWND hWnds, UINT message, WPARAM wParam, LPARAM lParam
 								case IDM_EXIT					:   PostQuitMessage (0);
 																	break;
 								case IDM_CONVERLUTION			:	if(converlutionTool == NULL){
-									converlutionTool = CreateWindowEx(NULL,szWindowChildClass, "Converlution Tool",  WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,0, 0, 640, 480, NULL, NULL, NULL, NULL);
-																		CreateWindow("BUTTON","ok",WS_CHILD | WS_VISIBLE,500,100,50,20,converlutionTool,(HMENU)IDM_OKCON,hInst,0);
-																		CreateWindow("BUTTON","cancle",WS_CHILD | WS_VISIBLE,500,150,50,20,converlutionTool,(HMENU)2435,hInst,0);
+									converlutionTool = CreateWindowEx(NULL,szWindowChildClass, "Converlution Tool",  WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, NULL, NULL);
+																		CreateWindow("BUTTON","USE",WS_CHILD | WS_VISIBLE,500,100,50,20,converlutionTool,(HMENU)IDM_OKCON,hInst,0);
+																		CreateWindow("BUTTON","Save",WS_CHILD | WS_VISIBLE,500,300,50,20,converlutionTool,(HMENU)IDM_SAVECON,hInst,0);
+																		CreateWindow("BUTTON","Cancle",WS_CHILD | WS_VISIBLE,500,150,50,20,converlutionTool,(HMENU)IDM_CANCLECON,hInst,0);
 																		ShowWindow(converlutionTool,number);
 																		UpdateWindow(converlutionTool);
 																	}
 																	break;
 								case IDM_OKCON					:	process (grey1, cx, cy);
+																	hdc = GetDC (hWnd);
+																	mydraw (hdc);
+																	ReleaseDC (hWnd, hdc);
+																	break;
+								case IDM_CANCLECON				:	grey1	= (unsigned char *) malloc (cx*cy);
+																	for (y = 0; y < cy; y ++)
+																	{
+																		for (x = 0; x < cx; x ++)
+																		{
+																			grey1 [y*cx + x] = imageMaster [y*cx + x];
+																		}
+																	}
+																	showImage ();
 																	hdc = GetDC (hWnd);
 																	mydraw (hdc);
 																	ReleaseDC (hWnd, hdc);

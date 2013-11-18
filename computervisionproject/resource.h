@@ -15,3 +15,6 @@
 #define IDM_CONVERLUTION		3003
 #define IDM_RL					3004
 #define IDM_OKCON				3005
+#define IDM_CANCLECON			3006
+#define IDM_SAVECON				3007
+
