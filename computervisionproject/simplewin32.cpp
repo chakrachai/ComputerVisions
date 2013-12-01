@@ -1,6 +1,7 @@
 // simplewin32.cpp : Defines the entry point for the application.
 //
 #include <stdio.h>
+#include <math.h>
 #include <shobjidl.h> 
 #include  "simplewin32.h"
 #define     MAX_LOADSTRING  100
@@ -312,6 +313,34 @@ void converlutionProcess (unsigned char *ig1, long cx, long cy)
 	}
 	showImage();
 	free (ig2);
+
+}
+
+void relaxtion(unsigned char *ig1, long cx, long cy)
+{
+	unsigned char	*ig2;
+	long			 x, y, m, n;
+	double			 h [3] = { 1, 1, 1};
+	double			 up,down,slope;
+
+	ig2 = (unsigned char *) malloc (cx*cy);
+	for (y = 0; y < cy; y ++)
+	{
+		for (x = 0; x < cx; x ++)
+		{
+			ig2 [y*cx + x] = ig1 [y*cx + x];
+		}
+	}
+
+	for (y = 1; y < cy - 1; y ++)
+	{
+		for (x = 1; x < cx - 1; x ++)
+		{
+					down = (h [2]*ig2 [(y)*cx + (x+1)] - h [0]*ig2 [(y)*cx + (x-1)])/2;
+					up   = (h [0]*ig2 [(y+1)*cx + (x)] - h [2]*ig2 [(y-1)*cx + (x)])/2;
+					slope = sqrt(pow(down,2)+pow(up,2)) < 0.0 ? -sqrt(pow(down,2)+pow(up,2)) : sqrt(pow(down,2)+pow(up,2)); //ความเข้ม
+		}
+	}
 
 }
 
