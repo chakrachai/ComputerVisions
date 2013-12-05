@@ -321,7 +321,7 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 	unsigned char	*ig2;
 	long			 x, y, m, n;
 	double			 h [3] = { 1, 1, 1};
-	double			 up,down,slope;
+	double			 up, down, brightness, maxBrightness, ps;
 
 	ig2 = (unsigned char *) malloc (cx*cy);
 	for (y = 0; y < cy; y ++)
@@ -338,7 +338,8 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 		{
 					down = (h [2]*ig2 [(y)*cx + (x+1)] - h [0]*ig2 [(y)*cx + (x-1)])/2;
 					up   = (h [0]*ig2 [(y+1)*cx + (x)] - h [2]*ig2 [(y-1)*cx + (x)])/2;
-					slope = sqrt(pow(down,2)+pow(up,2)) < 0.0 ? -sqrt(pow(down,2)+pow(up,2)) : sqrt(pow(down,2)+pow(up,2)); //ความเข้ม
+					brightness = sqrt(pow(down,2)+pow(up,2)) < 0.0 ? -sqrt(pow(down,2)+pow(up,2)) : sqrt(pow(down,2)+pow(up,2)); //ความเข้ม
+					ps = brightness / maxBrightness ;// p0
 		}
 	}
 
