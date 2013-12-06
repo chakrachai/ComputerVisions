@@ -321,7 +321,8 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 	unsigned char	*ig2;
 	long			 x, y, m, n;
 	double			 h [3] = { 1, 1, 1};
-	double			 up, down, brightness, maxBrightness, ps;
+	double			 up, down, brightness, ps, edge, notEdge, qEdge, pj, psDegree, pjDegree;
+	double			maxBrightness = 255;
 
 	ig2 = (unsigned char *) malloc (cx*cy);
 	for (y = 0; y < cy; y ++)
@@ -336,10 +337,28 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 	{
 		for (x = 1; x < cx - 1; x ++)
 		{
-					down = (h [2]*ig2 [(y)*cx + (x+1)] - h [0]*ig2 [(y)*cx + (x-1)])/2;
-					up   = (h [0]*ig2 [(y+1)*cx + (x)] - h [2]*ig2 [(y-1)*cx + (x)])/2;
-					brightness = sqrt(pow(down,2)+pow(up,2)) < 0.0 ? -sqrt(pow(down,2)+pow(up,2)) : sqrt(pow(down,2)+pow(up,2)); //ความเข้ม
-					ps = brightness / maxBrightness ;// p0
+			down = (h [2]*ig2 [(y)*cx + (x+1)] - h [0]*ig2 [(y)*cx + (x-1)])/2;
+			up   = (h [0]*ig2 [(y+1)*cx + (x)] - h [2]*ig2 [(y-1)*cx + (x)])/2;
+			brightness = sqrt(pow(down,2)+pow(up,2)) < 0.0 ? -sqrt(pow(down,2)+pow(up,2)) : sqrt(pow(down,2)+pow(up,2)); //ความเข้ม
+			ps = brightness / maxBrightness ;// p0
+			psDegree = atan(down / up);
+					
+			for (n = -1; n <= 1; n ++)
+			{
+				for (m = -1; m <= 1; m ++)
+				{
+					if(n != 0 && m != 0)
+					{
+						down = (h [2]*ig2 [(y + n)*cx + (x + m + 1)] - h [0]*ig2 [(y + n)*cx + (x + m - 1)])/2;
+						up   = (h [0]*ig2 [(y + n + 1)*cx + (x + m)] - h [2]*ig2 [(y + n - 1)*cx + (x + m)])/2;
+						brightness = sqrt(pow(down,2)+pow(up,2)) < 0.0 ? -sqrt(pow(down,2)+pow(up,2)) : sqrt(pow(down,2)+pow(up,2)); //ความเข้ม
+						pj = brightness / maxBrightness ;// p0
+						pjDegree = atan(down/up);
+						edge = fabs(1 - (fabs(psDegree - pjDegree)/180));
+						qEdge += (edge * ps) + (0.5 * (1 - ps)); //Q(ai:yk)
+					}
+				}
+			}
 		}
 	}
 
