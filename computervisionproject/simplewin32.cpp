@@ -321,7 +321,7 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 	unsigned char	*ig2;
 	long			 x, y, m, n;
 	double			 h [3] = { 1, 1, 1};
-	double			 up, down, brightness, ps, edge, notEdge, qEdge, pj, psDegree, pjDegree;
+	double			 up, down, brightness, ps, edge, notEdge, qEdge, pj, psDegree, pjDegree, ps_1;
 	double			maxBrightness = 255;
 
 	ig2 = (unsigned char *) malloc (cx*cy);
@@ -362,6 +362,8 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 					}
 				}
 			}
+
+			ps_1 = (ps * edge) / ((ps * qEdge) + ((1 - ps) * notEdge)); //ps+1
 		}
 	}
 
