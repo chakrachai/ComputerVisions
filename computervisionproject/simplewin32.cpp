@@ -363,7 +363,20 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 				}
 			}
 
-			ps_1 = (ps * edge) / ((ps * qEdge) + ((1 - ps) * notEdge)); //ps+1
+			ps_1 = (ps * qEdge) / ((ps * qEdge) + ((1 - ps) * notEdge)); //ps+1
+			if(ps_1 > 0.5 && ps_1 <=1)
+			{
+				ig1 [y*cx + x] = 0;
+				qEdge = 0;
+				notEdge = 0;
+			}else if(ps_1 >= 0 && ps_1 <= 0.5)
+			{
+				ig1 [y*cx + x] = 255;
+				qEdge = 0;
+				notEdge = 0;
+			}else{
+				MessageBox(NULL,"error",NULL,NULL);
+			}
 		}
 	}
 
@@ -631,7 +644,9 @@ LRESULT CALLBACK WndProc (HWND hWnds, UINT message, WPARAM wParam, LPARAM lParam
 								case IDM_MEDIAN					:	noiseProcess(grey1, cx, cy,false);
 																	paint(hWnd);
 																	break;
-
+								case IDM_RL						:	relaxtion(grey1, cx, cy);
+																	paint(hWnd);
+																	break;
 								default					         :   
 																	return DefWindowProc(hWnds, message, wParam, lParam);
                             }
