@@ -354,8 +354,11 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 						brightness = sqrt(pow(down,2)+pow(up,2)) < 0.0 ? -sqrt(pow(down,2)+pow(up,2)) : sqrt(pow(down,2)+pow(up,2)); //ความเข้ม
 						pj = brightness / maxBrightness ;// p0
 						pjDegree = atan(down/up);
+
 						edge = fabs(1 - (fabs(psDegree - pjDegree)/180));
-						qEdge += (edge * ps) + (0.5 * (1 - ps)); //Q(ai:yk)
+						qEdge += (edge * pj) + (0.5 * (1 - pj)); //Q(ai:yk)
+
+						notEdge += (0.5 * pj) + (0.5 * (1 - pj));
 					}
 				}
 			}
