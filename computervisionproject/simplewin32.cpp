@@ -321,8 +321,9 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 	unsigned char	*ig2;
 	long			 x, y, m, n;
 	double			 h [3] = { 1, 1, 1};
-	double			 up, down, brightness, ps, edge, notEdge, qEdge, pj, psDegree, pjDegree, ps_1;
-	double			maxBrightness = 255;
+	double			 up, down, brightness = 0, ps, edge, notEdge = 0, qEdge, pj, psDegree, pjDegree, ps_1,degreeValue;
+	double			maxBrightness = 0;
+	char			str[255];
 
 	ig2 = (unsigned char *) malloc (cx*cy);
 	for (y = 0; y < cy; y ++)
@@ -330,6 +331,12 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 		for (x = 0; x < cx; x ++)
 		{
 			ig2 [y*cx + x] = ig1 [y*cx + x];
+			down = (h [2]*ig1 [(y)*cx + (x+1)] - h [0]*ig1 [(y)*cx + (x-1)])/2;
+			up   = (h [0]*ig1 [(y+1)*cx + (x)] - h [2]*ig1 [(y-1)*cx + (x)])/2;
+			if(fabs(sqrt(pow(down,2)+pow(up,2))) > maxBrightness)
+			{
+				maxBrightness = fabs(sqrt(pow(down,2)+pow(up,2)));
+			}
 		}
 	}
 
@@ -341,19 +348,23 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 			up   = (h [0]*ig2 [(y+1)*cx + (x)] - h [2]*ig2 [(y-1)*cx + (x)])/2;
 			brightness = sqrt(pow(down,2)+pow(up,2)) < 0.0 ? -sqrt(pow(down,2)+pow(up,2)) : sqrt(pow(down,2)+pow(up,2)); //ความเข้ม
 			ps = brightness / maxBrightness ;// p0
-			psDegree = atan(down / up);
+			degreeValue = (down/(up == 0.0 ? 0.000000001 :up));
+			psDegree = atan(degreeValue)*180/3.14159265;
+			qEdge = 0;
+			notEdge = 0;
 					
 			for (n = -1; n <= 1; n ++)
 			{
 				for (m = -1; m <= 1; m ++)
 				{
-					if(n != 0 && m != 0)
+					if(fabs((double)n) + fabs((double)m) != 0)
 					{
 						down = (h [2]*ig2 [(y + n)*cx + (x + m + 1)] - h [0]*ig2 [(y + n)*cx + (x + m - 1)])/2;
 						up   = (h [0]*ig2 [(y + n + 1)*cx + (x + m)] - h [2]*ig2 [(y + n - 1)*cx + (x + m)])/2;
 						brightness = sqrt(pow(down,2)+pow(up,2)) < 0.0 ? -sqrt(pow(down,2)+pow(up,2)) : sqrt(pow(down,2)+pow(up,2)); //ความเข้ม
 						pj = brightness / maxBrightness ;// p0
-						pjDegree = atan(down/up);
+						degreeValue = (down/(up == 0.0 ? 0.000000001 :up));
+						pjDegree = atan(degreeValue)*180/3.14159265;
 
 						edge = fabs(1 - (fabs(psDegree - pjDegree)/180));
 						qEdge += (edge * pj) + (0.5 * (1 - pj)); //Q(ai:yk)
@@ -362,24 +373,23 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 					}
 				}
 			}
-
+			
 			ps_1 = (ps * qEdge) / ((ps * qEdge) + ((1 - ps) * notEdge)); //ps+1
-			if(ps_1 > 0.5 && ps_1 <=1)
+			//sprintf_s(str ,"ps = %lf , qedge = %lf ,notedge = %lf ,new ps = %lf , max = %lf \n",ps,qEdge,notEdge,ps_1, maxBrightness);
+			//OutputDebugString(str);
+			if(ps_1 > 0.5 && ps_1 <=1.0)
 			{
 				ig1 [y*cx + x] = 0;
-				qEdge = 0;
-				notEdge = 0;
-			}else if(ps_1 >= 0 && ps_1 <= 0.5)
+			}else if(ps_1 >= 0.0 && ps_1 <= 0.5)
 			{
-				ig1 [y*cx + x] = 255;
-				qEdge = 0;
-				notEdge = 0;
+				//ig1 [y*cx + x] = 255;
 			}else{
 				MessageBox(NULL,"error",NULL,NULL);
 			}
 		}
 	}
-
+	showImage();
+	free (ig2);
 }
 
 void loadfile (LPOLESTR lpszpath)
