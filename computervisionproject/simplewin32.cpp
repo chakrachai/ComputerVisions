@@ -316,12 +316,39 @@ void converlutionProcess (unsigned char *ig1, long cx, long cy)
 
 }
 
+double psStage(long y, long x, long m, long n, unsigned char *ig2 , double maxBrightness)
+{
+	double			 h [3] = { 1, 1, 1};
+	double			 up, down, brightness = 0,p ,degree,degreeValue;
+
+
+	down = (h [2]*ig2 [(y + n)*cx + (x + m + 1)] - h [0]*ig2 [(y + n)*cx + (x + m - 1)])/2;
+	up   = (h [0]*ig2 [(y + n + 1)*cx + (x + m)] - h [2]*ig2 [(y + n - 1)*cx + (x + m)])/2;
+	brightness = sqrt(pow(down,2)+pow(up,2)) < 0.0 ? -sqrt(pow(down,2)+pow(up,2)) : sqrt(pow(down,2)+pow(up,2)); //ความเข้ม
+	p = brightness / maxBrightness ;// p0
+
+	return p;
+}
+
+double degree(long y, long x, long n, long m, unsigned char *ig2 , double maxBrightness)
+{
+	double			 h [3] = { 1, 1, 1};
+	double			 up, down, brightness = 0, degree,degreeValue;
+
+	down = (h [2]*ig2 [(y + n)*cx + (x + m + 1)] - h [0]*ig2 [(y + n)*cx + (x + m - 1)])/2;
+	up   = (h [0]*ig2 [(y + n + 1)*cx + (x + m)] - h [2]*ig2 [(y + n - 1)*cx + (x + m)])/2;
+	brightness = sqrt(pow(down,2)+pow(up,2)) < 0.0 ? -sqrt(pow(down,2)+pow(up,2)) : sqrt(pow(down,2)+pow(up,2)); //ความเข้ม
+	degreeValue = (down/(up == 0.0 ? 0.000000001 :up));
+	degree = atan(degreeValue)*180/3.14159265;
+	
+	return degree;
+}
 void relaxtion(unsigned char *ig1, long cx, long cy)
 {
 	unsigned char	*ig2;
 	long			 x, y, m, n;
 	double			 h [3] = { 1, 1, 1};
-	double			 up, down, brightness = 0, ps, edge, notEdge = 0, qEdge, pj, psDegree, pjDegree, ps_1,degreeValue;
+	double			 up, down, ps, edge, notEdge = 0, qEdge = 0, pj, psDegree, pjDegree, ps_1;
 	double			maxBrightness = 0;
 	char			str[255];
 
@@ -344,14 +371,8 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 	{
 		for (x = 1; x < cx - 1; x ++)
 		{
-			down = (h [2]*ig2 [(y)*cx + (x+1)] - h [0]*ig2 [(y)*cx + (x-1)])/2;
-			up   = (h [0]*ig2 [(y+1)*cx + (x)] - h [2]*ig2 [(y-1)*cx + (x)])/2;
-			brightness = sqrt(pow(down,2)+pow(up,2)) < 0.0 ? -sqrt(pow(down,2)+pow(up,2)) : sqrt(pow(down,2)+pow(up,2)); //ความเข้ม
-			ps = brightness / maxBrightness ;// p0
-			degreeValue = (down/(up == 0.0 ? 0.000000001 :up));
-			psDegree = atan(degreeValue)*180/3.14159265;
-			qEdge = 0;
-			notEdge = 0;
+			ps = psStage(y, x, 0, 0,ig2 , maxBrightness);
+			psDegree = degree(y, x, 0, 0,ig2 , maxBrightness);
 					
 			for (n = -1; n <= 1; n ++)
 			{
@@ -359,12 +380,9 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 				{
 					if(fabs((double)n) + fabs((double)m) != 0)
 					{
-						down = (h [2]*ig2 [(y + n)*cx + (x + m + 1)] - h [0]*ig2 [(y + n)*cx + (x + m - 1)])/2;
-						up   = (h [0]*ig2 [(y + n + 1)*cx + (x + m)] - h [2]*ig2 [(y + n - 1)*cx + (x + m)])/2;
-						brightness = sqrt(pow(down,2)+pow(up,2)) < 0.0 ? -sqrt(pow(down,2)+pow(up,2)) : sqrt(pow(down,2)+pow(up,2)); //ความเข้ม
-						pj = brightness / maxBrightness ;// p0
-						degreeValue = (down/(up == 0.0 ? 0.000000001 :up));
-						pjDegree = atan(degreeValue)*180/3.14159265;
+						pj = psStage(y, x, n, m,ig2 , maxBrightness);
+
+						pjDegree = degree(y, x, 0, 0,ig2 , maxBrightness);
 
 						edge = fabs(1 - (fabs(psDegree - pjDegree)/180));
 						qEdge += (edge * pj) + (0.5 * (1 - pj)); //Q(ai:yk)
@@ -380,11 +398,17 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 			if(ps_1 > 0.5 && ps_1 <=1.0)
 			{
 				ig1 [y*cx + x] = 255;
+
+				qEdge = 0;
+				notEdge = 0;
 			}else if(ps_1 >= 0.0 && ps_1 <= 0.5)
 			{
 				ig1 [y*cx + x] = 0;
+				qEdge = 0;
+				notEdge = 0;
 			}else{
-				MessageBox(NULL,"error",NULL,NULL);
+				MessageBox(NULL,"logic not true",NULL,NULL);
+				break ; 
 			}
 		}
 	}
