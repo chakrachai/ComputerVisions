@@ -350,6 +350,7 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 	double			 h [3] = { 1, 1, 1};
 	double			 up, down, ps, edge, notEdge = 0, qEdge = 0, pj, psDegree, pjDegree, ps_1;
 	double			maxBrightness = 0;
+	double			nEdge = 0.09;
 	char			str[255];
 
 	ig2 = (unsigned char *) malloc (cx*cy);
@@ -385,9 +386,8 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 						pjDegree = degree(y, x, 0, 0,ig2 , maxBrightness);
 
 						edge = fabs(1 - (fabs(psDegree - pjDegree)/180));
-						qEdge += (edge * pj) + (0.5 * (1 - pj)); //Q(ai:yk)
-
-						notEdge += (0.5 * pj) + (0.5 * (1 - pj));
+						qEdge += (edge * pj) + (nEdge * (1 - pj)); //Q(ai:yk)
+						notEdge += (nEdge * pj) + (nEdge * (1 - pj));
 					}
 				}
 			}
