@@ -4,7 +4,8 @@
 #include <math.h>
 #include <shobjidl.h> 
 #include  "simplewin32.h"
-#define     MAX_LOADSTRING  100
+#define MAX_LOADSTRING  100
+#define	pi 22/7
 
 // Global Variables:
 HINSTANCE   hInst;                          // current instance
@@ -339,7 +340,7 @@ double degree(long y, long x, long n, long m, unsigned char *ig2 , double maxBri
 	up   = (h [0]*ig2 [(y + n + 1)*cx + (x + m)] - h [2]*ig2 [(y + n - 1)*cx + (x + m)])/2;
 	brightness = sqrt(pow(down,2)+pow(up,2)) < 0.0 ? -sqrt(pow(down,2)+pow(up,2)) : sqrt(pow(down,2)+pow(up,2)); //ความเข้ม
 	degreeValue = (down/(up == 0.0 ? 0.000000001 :up));
-	degree = atan(degreeValue)*180/3.14159265;
+	degree = atan(degreeValue)*180/pi;
 	
 	return degree;
 }
@@ -350,7 +351,7 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 	double			 h [3] = { 1, 1, 1};
 	double			 up, down, ps, edge, notEdge = 0, qEdge = 0, pj, psDegree, pjDegree, ps_1;
 	double			maxBrightness = 0;
-	double			nEdge = 0.09;
+	double			nEdge = 0.01;
 	char			str[255];
 
 	ig2 = (unsigned char *) malloc (cx*cy);
