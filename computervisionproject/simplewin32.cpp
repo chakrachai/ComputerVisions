@@ -379,10 +379,10 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 			//OutputDebugString(str);
 			if(ps_1 > 0.5 && ps_1 <=1.0)
 			{
-				ig1 [y*cx + x] = 0;
+				ig1 [y*cx + x] = 255;
 			}else if(ps_1 >= 0.0 && ps_1 <= 0.5)
 			{
-				//ig1 [y*cx + x] = 255;
+				ig1 [y*cx + x] = 0;
 			}else{
 				MessageBox(NULL,"error",NULL,NULL);
 			}
