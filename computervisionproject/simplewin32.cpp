@@ -317,7 +317,7 @@ void converlutionProcess (unsigned char *ig1, long cx, long cy)
 
 }
 
-double psStage(long y, long x, long m, long n, unsigned char *ig2 , double maxBrightness)
+double psStage(long y, long x, long n, long m, unsigned char *ig2 , double maxBrightness)
 {
 	double			 h [3] = { 1, 1, 1};
 	double			 up, down, brightness = 0,p ,degree,degreeValue;
