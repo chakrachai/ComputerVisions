@@ -28,7 +28,7 @@ char    szText [241];
 unsigned char	*image	= NULL;			// image array
 unsigned char	*grey1	= NULL;
 unsigned char	*imageMaster	= NULL;
-long			 bpp, cx = 0, cy = 0;	// image dimension
+long			 bpp, cx = 640, cy = 480;	// image dimension
 LPOLESTR		filepath;
 BITMAPFILEHEADER	 bf;
 BITMAPINFO		 bi;
@@ -320,12 +320,16 @@ double psStage(long y, long x, long n, long m, unsigned char *ig2 , double maxBr
 {
 	double			 h [3] = { -1, 1, 1};
 	double			 up, down, brightness = 0,p ,degree,degreeValue;
+		char			str[255];
 
 
 	down = (h [2]*ig2 [(y + n)*cx + (x + m + 1)] + h [0]*ig2 [(y + n)*cx + (x + m - 1)])/2;
 	up   = (h [2]*ig2 [(y + n + 1)*cx + (x + m)] + h [0]*ig2 [(y + n - 1)*cx + (x + m)])/2;
 	brightness = sqrt(pow(down,2)+pow(up,2)) < 0.0 ? -sqrt(pow(down,2)+pow(up,2)) : sqrt(pow(down,2)+pow(up,2)); //ความเข้ม
 	p = brightness / maxBrightness ;// p0
+
+	////sprintf_s(str ,"ps = %lf \n",p);
+	//OutputDebugString(str);
 
 	return p;
 }
@@ -338,30 +342,36 @@ double degree(long y, long x, long n, long m, unsigned char *ig2 , double maxBri
 
 	down = (h [2]*ig2 [(y + n)*cx + (x + m + 1)] + h [0]*ig2 [(y + n)*cx + (x + m - 1)])/2;
 	up   = (h [2]*ig2 [(y + n + 1)*cx + (x + m)] + h [0]*ig2 [(y + n - 1)*cx + (x + m)])/2;
-	brightness = sqrt(pow(down,2)+pow(up,2)) < 0.0 ? -sqrt(pow(down,2)+pow(up,2)) : sqrt(pow(down,2)+pow(up,2)); //ความเข้ม
-	degreeValue = (down/(up == 0.0 ? 0.000000001 :up));
-	degree = (atan(degreeValue))*180/(22/7);
+	//brightness = sqrt(pow(down,2)+pow(up,2)) < 0.0 ? -sqrt(pow(down,2)+pow(up,2)) : sqrt(pow(down,2)+pow(up,2)); //ความเข้ม
+	
+	if(up == 0){
+		degree = 90.0;
+	}else{
 
+		degreeValue = (down/up);
+		degree = (atan(degreeValue))*180/(22/7);
+	}
 		///sprintf_s(str ,"down = %lf , up = %lf ,brigth = %lf , degreevakue=%lf , degree=%lf\n",down,up,brightness,degreeValue,degree);
 		//OutputDebugString(str);
 	return degree;
 }
 void relaxtion(unsigned char *ig1, long cx, long cy)
 {
-	unsigned char	*ig2;
-	long			 x, y, m, n;
-	double			 h [3] = { -1, 0, 1};
-	double			 up, down, ps, edge, notEdge = 0, qEdge = 0, pj, psDegree, pjDegree, ps_1;
-	double			maxBrightness = 0;
-	double			nEdge = 0.5;
+	float 	*prop,*edge,*not_edge;
+	long			 x, y, m, n,loop;
+	float			 h [3] = { -1, 0, 1};
+	float			 up = 0.0, down = 0.0, ps = 0.0, pedge, notEdge = 0.0, qEdge = 0.0, pj = 0, psDegree = 0.0, pjDegree = 0.0, ps_1;
+	float			maxBrightness = 0;
+	float			nEdge = 0.5;
 	char			str[255];
 
-	ig2 = (unsigned char *) malloc (cx*cy);
+	prop = (float*) malloc (cx*cy*sizeof(float*));
+	edge = (float*) malloc (cx*cy*sizeof(float*));
+	not_edge = (float*) malloc (cx*cy*sizeof(float*));
 	for (y = 0; y < cy; y ++)
 	{
 		for (x = 0; x < cx; x ++)
 		{
-			ig2 [y*cx + x] = ig1 [y*cx + x];
 			down = (h [2]*ig1 [(y)*cx + (x+1)] + h [0]*ig1 [(y)*cx + (x-1)])/2;
 			up   = (h [2]*ig1 [(y+1)*cx + (x)] + h [0]*ig1 [(y-1)*cx + (x)])/2;
 			if(fabs(sqrt(pow(down,2)+pow(up,2))) > maxBrightness)
@@ -375,45 +385,107 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 	{
 		for (x = 1; x < cx - 1; x ++)
 		{
-			ps = psStage(y, x, 0, 0,ig2 , maxBrightness);
-			psDegree = degree(y, x, 0, 0,ig2 , maxBrightness);
+			ps = psStage(y, x, 0, 0,ig1 , maxBrightness);
+			prop [(y*cx + x)] = ps;
+			psDegree = degree(y, x, 0, 0,ig1 , maxBrightness);
+			//gradran [(y*cx + x)] = psDegree;
 			for (n = -1; n <= 1; n ++)
 			{
 				for (m = -1; m <= 1; m ++)
 				{
-					if(fabs((double)n) + fabs((double)m) != 0)
+					if(fabs((float)n) + fabs((float)m) != 0)
 					{
-						pj = psStage(y, x, n, m,ig2 , maxBrightness);
+						pj = psStage(y, x, n, m,ig1 , maxBrightness);
 
-						pjDegree = degree(y, x, n, m,ig2 , maxBrightness);
+						pjDegree = degree(y, x, n, m,ig1 , maxBrightness);
 
-						edge = fabs(1 - fabs(psDegree - pjDegree)/180);
-						qEdge += (edge * pj) + (nEdge * (1.0 - pj)); //Q(ai:yk)
-						notEdge += (nEdge * pj) + (nEdge * (1.0 - pj));
+						pedge = fabs(1 - fabs(psDegree - pjDegree)/180);
+						qEdge += (pedge * pj) + (nEdge * (1 - pj)); //Q(ai:yk)
+						notEdge += (nEdge * pj) + (nEdge * (1 - pj));
 					}
 				}
 			}
-			
-			ps_1 = (ps * qEdge) / ((ps * qEdge) + ((1 - ps) * notEdge)); //ps+1
-			if(ps_1 > 0.5 && ps_1 <=1.0)
-			{
-				ig1 [y*cx + x] = 255;
+			edge [y*cx + x] = qEdge;
+			not_edge [y*cx + x] = notEdge;
+			//if(x == 254)
+		//	sprintf_s(str ,"qEdge = %lf\n",edge [y*cx + x]);
+				//sprintf_s(str ,"ps = %lf ,edge = %lf , notE = %lf \n",ps,edge [y*cx + x],not_edge [y*cx + x]);
+			//OutputDebugString(str);
+			qEdge = 0.0;
+			notEdge = 0.0;
+		}
+	}
+	for(loop=0;loop<15;loop++){
 
-				qEdge = 0;
-				notEdge = 0;
-			}else if(ps_1 >= 0.0 && ps_1 <= 0.5)
+		for (y = 1; y < cy - 1; y ++)
+		{
+			for (x = 1; x < cx - 1; x ++)
 			{
-				//ig1 [y*cx + x] = 0;
+				ps = (prop [y*cx + x]);
+				//if(x == 254)
+				//sprintf_s(str ,"ps = %lf , prop = %lf \n",ps,prop [y*cx + x]);
+				//OutputDebugString(str);
+				psDegree = degree(y, x, 0, 0,ig1 , maxBrightness);
+				for (n = -1; n <= 1; n ++)
+				{
+					for (m = -1; m <= 1; m ++)
+					{
+						if(fabs((float)n) + fabs((float)m) != 0)
+						{
+							pj = prop [(y + n)*cx + (x + m)];
+
+							pjDegree = pjDegree = degree(y, x, n, m,ig1 , maxBrightness);
+								//if(x == 254)
+									//sprintf_s(str ,"pj = %f prop [(y + n)*cx + (x + m)] = %f\n",pj,prop [(y + n)*cx + (x + m)]);
+
+							pedge = fabs(1 - fabs(psDegree - pjDegree)/180);
+							qEdge = (pedge * pj) + (nEdge * (1.0 - pj)); //Q(ai:yk)
+							notEdge = (nEdge * pj) + (nEdge * (1.0 - pj));
+							//sprintf_s(str ,"ps = %lf \n",(double)((y + n)*cx + (x + m)));
+							//OutputDebugString(str);
+						}
+					}
+				}
+
+				if(((ps * edge [y*cx + x]) + ((1 - ps) * not_edge [y*cx + x])) == 0.0){
+					ps_1 = 0.0;
+				}else{
+					ps_1 = (ps * edge [y*cx + x]) / ((ps * edge [y*cx + x]) + ((1 - ps) * not_edge [y*cx + x]));
+				}
+				edge [y*cx + x] = qEdge;
+				not_edge [y*cx + x] = notEdge ;
+				prop [y*cx + x] = ps_1;
+				//if(x == 254)
+				//sprintf_s(str ,"qEdge = %lf ,edge = %lf , notE = %lf ,pjDegree = %lf , pj = %lf x = %lf , y = %lf \n",ps_1,prop [y*cx + x],not_edge [y*cx + x] ,pjDegree,pj,(double)x,(double)y);
+				//sprintf_s(str ,"ps = %lf ,edge = %lf , notE = %lf \n",ps,edge [y*cx + x],not_edge [y*cx + x]);
+				//OutputDebugString(str);
 				qEdge = 0;
 				notEdge = 0;
-			}else{
-				MessageBox(NULL,"logic not true",NULL,NULL);
-				break ; 
 			}
 		}
 	}
+
+	for (y = 1; y < cy - 1; y ++)
+	{
+			for (x = 1; x < cx - 1; x ++)
+			{
+				//sprintf_s(str ,"ps = %lf ,edge = %lf , notE = %lf \n",ps,edge [y*cx + x],not_edge [y*cx + x]);
+				//OutputDebugString(str);
+				if(prop [y*cx + x] > 0.8 && prop [y*cx + x] <= 1)
+				{
+					ig1 [y*cx + x] = 255;
+				}
+				else if(prop [y*cx + x] >= 0.0 && prop [y*cx + x] <= 0.8)
+				{
+					ig1 [y*cx + x] = 0;
+				}else{
+					MessageBox(NULL,"logic not true",NULL,NULL);
+					break ;
+                }			
+			}
+	}
 	showImage();
-	free (ig2);
+	//free (ig2);
 }
 
 void loadfile (LPOLESTR lpszpath)
@@ -634,6 +706,7 @@ LRESULT CALLBACK WndProc (HWND hWnds, UINT message, WPARAM wParam, LPARAM lParam
 
 								case IDM_OPENFILE				:	openDiarog();
 																	paint(hWnds);
+																	if(filepath)
 																	CoTaskMemFree(filepath);
 																	SetWindowPos(hWnd,NULL,0,0,cx+16,cy+59,NULL);
 																	break;
