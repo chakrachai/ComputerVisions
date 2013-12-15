@@ -33,6 +33,10 @@ LPOLESTR		filepath;
 BITMAPFILEHEADER	 bf;
 BITMAPINFO		 bi;
 
+float			maxBrightness = 0;
+float 			*prop, *edge, *not_edge;
+boolean			state = true;
+
 int APIENTRY _tWinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
                         LPTSTR lpCmdLine,
                         int nCmdShow)
@@ -320,11 +324,16 @@ double psStage(long y, long x, long n, long m, unsigned char *ig2 , double maxBr
 {
 	double			 h [3] = { -1, 1, 1};
 	double			 up, down, brightness = 0,p ,degree,degreeValue;
-		char			str[255];
-
-
-	down = (h [2]*ig2 [(y + n)*cx + (x + m + 1)] + h [0]*ig2 [(y + n)*cx + (x + m - 1)])/2;
-	up   = (h [2]*ig2 [(y + n + 1)*cx + (x + m)] + h [0]*ig2 [(y + n - 1)*cx + (x + m)])/2;
+	char			str[255];
+	double			addrress ;
+	if((y + n) < 0 || (y + n) > cy || (x + n) < 0 || (x + n) > cx){
+		down = (h [2] * 0 + h [0] * 0)/2;
+		up   = (h [0] * 0 + h [2] * 0)/2;
+	}else
+	{
+		down = (h [2]*ig2 [(y + n)*cx + (x + m + 1)] + h [0]*ig2 [(y + n)*cx + (x + m - 1)])/2;
+		up   = (h [0]*ig2 [(y + n + 1)*cx + (x + m)] + h [2]*ig2 [(y + n - 1)*cx + (x + m)])/2;
+	}
 	brightness = sqrt(pow(down,2)+pow(up,2)) < 0.0 ? -sqrt(pow(down,2)+pow(up,2)) : sqrt(pow(down,2)+pow(up,2)); //ความเข้ม
 	p = brightness / maxBrightness ;// p0
 
@@ -334,18 +343,25 @@ double psStage(long y, long x, long n, long m, unsigned char *ig2 , double maxBr
 	return p;
 }
 
-double degree(long y, long x, long n, long m, unsigned char *ig2 , double maxBrightness)
+double degree(long y, long x, long n, long m, unsigned char *ig2)
 {
 	double			 h [3] = { -1, 1, 1};
 	double			 up, down, brightness = 0, degree,degreeValue;
 	char			str[255];
 
-	down = (h [2]*ig2 [(y + n)*cx + (x + m + 1)] + h [0]*ig2 [(y + n)*cx + (x + m - 1)])/2;
-	up   = (h [2]*ig2 [(y + n + 1)*cx + (x + m)] + h [0]*ig2 [(y + n - 1)*cx + (x + m)])/2;
-	//brightness = sqrt(pow(down,2)+pow(up,2)) < 0.0 ? -sqrt(pow(down,2)+pow(up,2)) : sqrt(pow(down,2)+pow(up,2)); //ความเข้ม
-	
+	if((y + n) < 0 || (y + n) > cy || (x + n) < 0 || (x + n) > cx){
+		down = (h [2] * 0 + h [0] * 0)/2;
+		up   = (h [0] * 0 + h [2] * 0)/2;
+	}else
+	{
+		down = (h [2]*ig2 [(y + n)*cx + (x + m + 1)] + h [0]*ig2 [(y + n)*cx + (x + m - 1)])/2;
+		up   = (h [0]*ig2 [(y + n + 1)*cx + (x + m)] + h [2]*ig2 [(y + n - 1)*cx + (x + m)])/2;
+	}
+
 	if(up == 0){
+
 		degree = 90.0;
+
 	}else{
 
 		degreeValue = (down/up);
@@ -357,75 +373,73 @@ double degree(long y, long x, long n, long m, unsigned char *ig2 , double maxBri
 }
 void relaxtion(unsigned char *ig1, long cx, long cy)
 {
-	float 	*prop,*edge,*not_edge;
 	long			 x, y, m, n,loop;
 	float			 h [3] = { -1, 0, 1};
 	float			 up = 0.0, down = 0.0, ps = 0.0, pedge, notEdge = 0.0, qEdge = 0.0, pj = 0, psDegree = 0.0, pjDegree = 0.0, ps_1;
-	float			maxBrightness = 0;
 	float			nEdge = 0.5;
 	char			str[255];
 
-	prop = (float*) malloc (cx*cy*sizeof(float*));
-	edge = (float*) malloc (cx*cy*sizeof(float*));
-	not_edge = (float*) malloc (cx*cy*sizeof(float*));
-	for (y = 0; y < cy; y ++)
-	{
-		for (x = 0; x < cx; x ++)
-		{
-			down = (h [2]*ig1 [(y)*cx + (x+1)] + h [0]*ig1 [(y)*cx + (x-1)])/2;
-			up   = (h [2]*ig1 [(y+1)*cx + (x)] + h [0]*ig1 [(y-1)*cx + (x)])/2;
-			if(fabs(sqrt(pow(down,2)+pow(up,2))) > maxBrightness)
-			{
-				maxBrightness = fabs(sqrt(pow(down,2)+pow(up,2)));
-			}
-		}
-	}
+	if(state){
 
-	for (y = 1; y < cy - 1; y ++)
-	{
-		for (x = 1; x < cx - 1; x ++)
+		prop = (float*) malloc (cx*cy*sizeof(float*));
+		edge = (float*) malloc (cx*cy*sizeof(float*));
+		not_edge = (float*) malloc (cx*cy*sizeof(float*));
+
+		for (y = 0; y < cy; y ++)
 		{
-			ps = psStage(y, x, 0, 0,ig1 , maxBrightness);
-			prop [(y*cx + x)] = ps;
-			psDegree = degree(y, x, 0, 0,ig1 , maxBrightness);
-			//gradran [(y*cx + x)] = psDegree;
-			for (n = -1; n <= 1; n ++)
+			for (x = 0; x < cx; x ++)
 			{
-				for (m = -1; m <= 1; m ++)
+				down = (h [2]*ig1 [(y)*cx + (x+1)] + h [0]*ig1 [(y)*cx + (x-1)])/2;
+				up   = (h [0]*ig1 [(y+1)*cx + (x)] + h [2]*ig1 [(y-1)*cx + (x)])/2;
+				if(fabs(sqrt(pow(down,2)+pow(up,2))) > maxBrightness)
 				{
-					if(fabs((float)n) + fabs((float)m) != 0)
-					{
-						pj = psStage(y, x, n, m,ig1 , maxBrightness);
-
-						pjDegree = degree(y, x, n, m,ig1 , maxBrightness);
-
-						pedge = fabs(1 - fabs(psDegree - pjDegree)/180);
-						qEdge += (pedge * pj) + (nEdge * (1 - pj)); //Q(ai:yk)
-						notEdge += (nEdge * pj) + (nEdge * (1 - pj));
-					}
+					maxBrightness = fabs(sqrt(pow(down,2)+pow(up,2)));
 				}
 			}
-			edge [y*cx + x] = qEdge;
-			not_edge [y*cx + x] = notEdge;
-			//if(x == 254)
-		//	sprintf_s(str ,"qEdge = %lf\n",edge [y*cx + x]);
-				//sprintf_s(str ,"ps = %lf ,edge = %lf , notE = %lf \n",ps,edge [y*cx + x],not_edge [y*cx + x]);
-			//OutputDebugString(str);
-			qEdge = 0.0;
-			notEdge = 0.0;
 		}
-	}
-	for(loop=0;loop<15;loop++){
 
-		for (y = 1; y < cy - 1; y ++)
+		for (y = 0; y < cy ; y ++)
+		{
+			for (x = 0; x < cx ; x ++)
+			{
+				ps = psStage(y, x, 0, 0,ig1 , maxBrightness);
+				prop [(y*cx + x)] = ps;
+				psDegree = degree(y, x, 0, 0,ig1);
+
+				for (n = -1; n <= 1; n ++)
+				{
+					for (m = -1; m <= 1; m ++)
+					{
+						if(fabs((float)n) + fabs((float)m) != 0)
+						{
+							pj = psStage(y, x, n, m,ig1 , maxBrightness);
+
+							pjDegree = degree(y, x, n, m,ig1);
+
+							pedge = fabs(1.0 - fabs(psDegree - pjDegree)/180);
+
+							qEdge += (pedge * pj) + (nEdge * (1.0 - pj)); //Q(ai:yk)
+							notEdge += (nEdge * pj) + (nEdge * (1.0 - pj));
+						}
+					}
+				}
+				edge [y*cx + x] = qEdge;
+				not_edge [y*cx + x] = notEdge;
+
+							//				sprintf_s(str ,"not_edge [y*cx + x] = %lf \n",edge [y*cx + x]);
+							//OutputDebugString(str);
+
+				qEdge = 0.0;
+				notEdge = 0.0;
+			}
+		}
+		state = false;
+	}
+	for (y = 1; y < cy - 1; y ++)
 		{
 			for (x = 1; x < cx - 1; x ++)
 			{
-				ps = (prop [y*cx + x]);
-				//if(x == 254)
-				//sprintf_s(str ,"ps = %lf , prop = %lf \n",ps,prop [y*cx + x]);
-				//OutputDebugString(str);
-				psDegree = degree(y, x, 0, 0,ig1 , maxBrightness);
+				psDegree = degree(y, x, 0, 0,imageMaster);
 				for (n = -1; n <= 1; n ++)
 				{
 					for (m = -1; m <= 1; m ++)
@@ -434,56 +448,47 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 						{
 							pj = prop [(y + n)*cx + (x + m)];
 
-							pjDegree = pjDegree = degree(y, x, n, m,ig1 , maxBrightness);
-								//if(x == 254)
-									//sprintf_s(str ,"pj = %f prop [(y + n)*cx + (x + m)] = %f\n",pj,prop [(y + n)*cx + (x + m)]);
+							pjDegree = degree(y, x, n, m,imageMaster);
 
-							pedge = fabs(1 - fabs(psDegree - pjDegree)/180);
-							qEdge = (pedge * pj) + (nEdge * (1.0 - pj)); //Q(ai:yk)
-							notEdge = (nEdge * pj) + (nEdge * (1.0 - pj));
-							//sprintf_s(str ,"ps = %lf \n",(double)((y + n)*cx + (x + m)));
-							//OutputDebugString(str);
+							pedge = fabs(1.0 - fabs(psDegree - pjDegree)/180);
+
+							qEdge += (pedge * pj) + (nEdge * (1.0 - pj)); //Q(ai:yk)
+							notEdge += (nEdge * pj) + (nEdge * (1.0 - pj));
+							
 						}
 					}
 				}
 
-				if(((ps * edge [y*cx + x]) + ((1 - ps) * not_edge [y*cx + x])) == 0.0){
+				if((((prop [y*cx + x]) * edge [y*cx + x]) + ((1 - (prop [y*cx + x])) * not_edge [y*cx + x])) == 0.0){
 					ps_1 = 0.0;
 				}else{
-					ps_1 = (ps * edge [y*cx + x]) / ((ps * edge [y*cx + x]) + ((1 - ps) * not_edge [y*cx + x]));
+					ps_1 = ((prop [y*cx + x]) * edge [y*cx + x]) / (((prop [y*cx + x]) * edge [y*cx + x]) + ((1 - (prop [y*cx + x])) * not_edge [y*cx + x]));
 				}
+				//if(ps_1 < prop [y*cx + x])
+			//	sprintf_s(str ,"prop [y*cx + x] = %lf ,avg [y*cx + x] = %lf ,num = %lf \n",prop [y*cx + x] ,avg [y*cx + x] ,num);
+				//OutputDebugString(str);
+
 				edge [y*cx + x] = qEdge;
 				not_edge [y*cx + x] = notEdge ;
 				prop [y*cx + x] = ps_1;
-				//if(x == 254)
-				//sprintf_s(str ,"qEdge = %lf ,edge = %lf , notE = %lf ,pjDegree = %lf , pj = %lf x = %lf , y = %lf \n",ps_1,prop [y*cx + x],not_edge [y*cx + x] ,pjDegree,pj,(double)x,(double)y);
-				//sprintf_s(str ,"ps = %lf ,edge = %lf , notE = %lf \n",ps,edge [y*cx + x],not_edge [y*cx + x]);
-				//OutputDebugString(str);
+
 				qEdge = 0;
 				notEdge = 0;
-			}
-		}
-	}
 
-	for (y = 1; y < cy - 1; y ++)
-	{
-			for (x = 1; x < cx - 1; x ++)
-			{
-				//sprintf_s(str ,"ps = %lf ,edge = %lf , notE = %lf \n",ps,edge [y*cx + x],not_edge [y*cx + x]);
-				//OutputDebugString(str);
-				if(prop [y*cx + x] > 0.8 && prop [y*cx + x] <= 1)
+				if(prop [y*cx + x] > 0.5)
 				{
 					ig1 [y*cx + x] = 255;
 				}
-				else if(prop [y*cx + x] >= 0.0 && prop [y*cx + x] <= 0.8)
+				else if(prop [y*cx + x] <= 0.5)
 				{
 					ig1 [y*cx + x] = 0;
 				}else{
+					//ig1 [y*cx + x] = 0;
 					MessageBox(NULL,"logic not true",NULL,NULL);
 					break ;
                 }			
 			}
-	}
+		}
 	showImage();
 	//free (ig2);
 }
@@ -687,7 +692,7 @@ void paint(HWND hWnds)
 //
 LRESULT CALLBACK WndProc (HWND hWnds, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    int         wmId, wmEvent;
+    int         wmId, wmEvent , i;
     PAINTSTRUCT ps;
     HDC         hdc;
 	long		y,x;
@@ -709,6 +714,7 @@ LRESULT CALLBACK WndProc (HWND hWnds, UINT message, WPARAM wParam, LPARAM lParam
 																	if(filepath)
 																	CoTaskMemFree(filepath);
 																	SetWindowPos(hWnd,NULL,0,0,cx+16,cy+59,NULL);
+																			state = true;
 																	break;
 								case IDM_SAVEFILE				:	saveDiarog();
 																	break;
@@ -717,6 +723,7 @@ LRESULT CALLBACK WndProc (HWND hWnds, UINT message, WPARAM wParam, LPARAM lParam
 																	break;
 								case IDM_CONVERLUTION			:	if(converlutionTool == NULL){
 																		createConverlutionTool();
+																		state = true;
 																	}
 																	break;
 								case IDM_OKCON					:	converlutionProcess (grey1, cx, cy);
@@ -745,13 +752,16 @@ LRESULT CALLBACK WndProc (HWND hWnds, UINT message, WPARAM wParam, LPARAM lParam
 																	break;
 
 								case IDM_MEAN					:	noiseProcess(grey1, cx, cy,true);
+									state = true;
 																	paint(hWnd);
 																	break;
 
 								case IDM_MEDIAN					:	noiseProcess(grey1, cx, cy,false);
+									state = true;
 																	paint(hWnd);
 																	break;
-								case IDM_RL						:	relaxtion(grey1, cx, cy);
+								case IDM_RL						:	for(i = 0;i<=10;i++)
+																	relaxtion(grey1, cx, cy);
 																	paint(hWnd);
 																	break;
 								default					         :   
