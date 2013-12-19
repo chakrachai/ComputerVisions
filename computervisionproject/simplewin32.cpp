@@ -34,7 +34,7 @@ BITMAPFILEHEADER	 bf;
 BITMAPINFO		 bi;
 
 float			maxBrightness = 0;
-float 			*prop, *edge, *not_edge;
+float 			*prop, *edge, *not_edge,*label;;
 boolean			state = true;
 
 int APIENTRY _tWinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
@@ -371,126 +371,119 @@ double degree(long y, long x, long n, long m, unsigned char *ig2)
 		//OutputDebugString(str);
 	return degree;
 }
+void laplace(unsigned char *pic, long cx, long cy){
+	unsigned char	*ig2;
+	long			 x, y, m, n;
+	double			 h [3][3] = {{0,  1, 0},
+								 {1,  -4, 1},
+								 {0,  1, 0}};
+	double			 sum, nrm,maxSum = 0.0,minSum = 0.0,maxCount =0,minCount = 0;
+	
+	/*for (y = 0; y < cy; y ++)
+	{
+		for (x = 0; x < cx; x ++)
+		{
+			if (x > 20 && x < 100)
+				ig1 [x + y*cx] = 0;
+		}
+	}
+	*/
+
+	ig2 = (unsigned char *) malloc (cx*cy);
+	for (y = 0; y < cy; y ++)
+	{
+		for (x = 0; x < cx; x ++)
+		{
+			ig2 [y*cx + x] = pic [y*cx + x];
+		}
+	}
+
+	for (y = 1; y < cy - 1; y ++)
+	{
+		for (x = 1; x < cx - 1; x ++)
+		{
+			sum = 0.0;
+			nrm = 0.0;
+			for (n = -1; n <= 1; n ++)
+			{
+				for (m = -1; m <= 1; m ++)
+				{
+					sum += h [n+1][m+1]*ig2 [(y+n)*cx + (x+m)];
+					nrm += h [n+1][m+1] < 0.0 ? -h [n+1][m+1] : h [n+1][m+1];
+				}
+			}
+			pic [y*cx + x] = (int) ((sum < 0.0 ? -sum : sum)/nrm);
+		}
+	}
+
+	free(ig2);
+
+}
+
+void labelPixel(unsigned char *pic,float *label ,long cx, long cy){
+
+	unsigned char	*ig2;
+	long			 x, y, m, n;
+	double			 h [3][3] = {{0,  1, 0},
+								 {1,  -4, 1},
+								 {0,  1, 0}};
+	double			 sum, nrm,maxSum = 0.0,minSum = 0.0,maxCount =0,minCount = 0;
+	char			str[254];
+
+	for (y = 0; y < cy ; y ++)
+	{
+		for (x = 0; x < cx ; x ++)
+		{
+			if(pic [y*cx + x] != 0){
+				maxSum += pic [y*cx + x];
+				maxCount += 1;
+			}else{
+				minSum += pic [y*cx + x];
+				minCount += 1;
+			}
+		}
+	}
+
+	for (y = 0; y < cy; y ++)
+	{
+		for (x = 0; x < cx; x ++)
+		{
+			if(pic [y*cx + x] != 0){
+				label [(y*cx + x)] = maxSum / maxCount;
+			}else
+			{
+				label [(y*cx + x)] = minSum / minCount;
+			}
+		//	sprintf_s(str ,"label [(y*cx + x)] = %lf \n",label [(y*cx + x)]);
+			//OutputDebugString(str);
+
+		}
+	}
+}
 void relaxtion(unsigned char *ig1, long cx, long cy)
 {
-	long			 x, y, m, n,loop;
-	float			 h [3] = { -1, 0, 1};
-	float			 up = 0.0, down = 0.0, ps = 0.0, pedge, notEdge = 0.0, qEdge = 0.0, pj = 0, psDegree = 0.0, pjDegree = 0.0, ps_1;
-	float			nEdge = 0.5;
-	char			str[255];
+	unsigned char *ig2;
+	long			x,y,n,m;
+	double			 h [3] = { -1, 1, 1};
+	float			down,up;
 
-	if(state){
-
-		prop = (float*) malloc (cx*cy*sizeof(float*));
-		edge = (float*) malloc (cx*cy*sizeof(float*));
-		not_edge = (float*) malloc (cx*cy*sizeof(float*));
-
-		for (y = 0; y < cy; y ++)
+    ig2 = (unsigned char *) malloc (cx*cy);
+    for (y = 0; y < cy; y ++)
+    {
+		for (x = 0; x < cx; x ++)
 		{
-			for (x = 0; x < cx; x ++)
+			ig2 [y*cx + x] = ig1 [y*cx + x];
+			down = (h [2]*ig1 [(y)*cx + (x+1)] - h [0]*ig1 [(y)*cx + (x-1)])/2;
+			up = (h [0]*ig1 [(y+1)*cx + (x)] - h [2]*ig1 [(y-1)*cx + (x)])/2;
+			if(fabs(sqrt(pow(down,2)+pow(up,2))) > maxBrightness)
 			{
-				down = (h [2]*ig1 [(y)*cx + (x+1)] + h [0]*ig1 [(y)*cx + (x-1)])/2;
-				up   = (h [0]*ig1 [(y+1)*cx + (x)] + h [2]*ig1 [(y-1)*cx + (x)])/2;
-				if(fabs(sqrt(pow(down,2)+pow(up,2))) > maxBrightness)
-				{
-					maxBrightness = fabs(sqrt(pow(down,2)+pow(up,2)));
-				}
+				maxBrightness = fabs(sqrt(pow(down,2)+pow(up,2)));
 			}
 		}
-
-		for (y = 0; y < cy ; y ++)
-		{
-			for (x = 0; x < cx ; x ++)
-			{
-				ps = psStage(y, x, 0, 0,ig1 , maxBrightness);
-				prop [(y*cx + x)] = ps;
-				psDegree = degree(y, x, 0, 0,ig1);
-
-				for (n = -1; n <= 1; n ++)
-				{
-					for (m = -1; m <= 1; m ++)
-					{
-						if(fabs((float)n) + fabs((float)m) != 0)
-						{
-							pj = psStage(y, x, n, m,ig1 , maxBrightness);
-
-							pjDegree = degree(y, x, n, m,ig1);
-
-							pedge = fabs(1.0 - fabs(psDegree - pjDegree)/180);
-
-							qEdge += (pedge * pj) + (nEdge * (1.0 - pj)); //Q(ai:yk)
-							notEdge += (nEdge * pj) + (nEdge * (1.0 - pj));
-						}
-					}
-				}
-				edge [y*cx + x] = qEdge;
-				not_edge [y*cx + x] = notEdge;
-
-							//				sprintf_s(str ,"not_edge [y*cx + x] = %lf \n",edge [y*cx + x]);
-							//OutputDebugString(str);
-
-				qEdge = 0.0;
-				notEdge = 0.0;
-			}
-		}
-		state = false;
 	}
-	for (y = 1; y < cy - 1; y ++)
-		{
-			for (x = 1; x < cx - 1; x ++)
-			{
-				psDegree = degree(y, x, 0, 0,imageMaster);
-				for (n = -1; n <= 1; n ++)
-				{
-					for (m = -1; m <= 1; m ++)
-					{
-						if(fabs((float)n) + fabs((float)m) != 0)
-						{
-							pj = prop [(y + n)*cx + (x + m)];
 
-							pjDegree = degree(y, x, n, m,imageMaster);
 
-							pedge = fabs(1.0 - fabs(psDegree - pjDegree)/180);
-
-							qEdge += (pedge * pj) + (nEdge * (1.0 - pj)); //Q(ai:yk)
-							notEdge += (nEdge * pj) + (nEdge * (1.0 - pj));
-							
-						}
-					}
-				}
-
-				if((((prop [y*cx + x]) * edge [y*cx + x]) + ((1 - (prop [y*cx + x])) * not_edge [y*cx + x])) == 0.0){
-					ps_1 = 0.0;
-				}else{
-					ps_1 = ((prop [y*cx + x]) * edge [y*cx + x]) / (((prop [y*cx + x]) * edge [y*cx + x]) + ((1 - (prop [y*cx + x])) * not_edge [y*cx + x]));
-				}
-				//if(ps_1 < prop [y*cx + x])
-			//	sprintf_s(str ,"prop [y*cx + x] = %lf ,avg [y*cx + x] = %lf ,num = %lf \n",prop [y*cx + x] ,avg [y*cx + x] ,num);
-				//OutputDebugString(str);
-
-				edge [y*cx + x] = qEdge;
-				not_edge [y*cx + x] = notEdge ;
-				prop [y*cx + x] = ps_1;
-
-				qEdge = 0;
-				notEdge = 0;
-
-				if(prop [y*cx + x] > 0.5)
-				{
-					ig1 [y*cx + x] = 255;
-				}
-				else if(prop [y*cx + x] <= 0.5)
-				{
-					ig1 [y*cx + x] = 0;
-				}else{
-					//ig1 [y*cx + x] = 0;
-					MessageBox(NULL,"logic not true",NULL,NULL);
-					break ;
-                }			
-			}
-		}
 	showImage();
-	//free (ig2);
 }
 
 void loadfile (LPOLESTR lpszpath)
