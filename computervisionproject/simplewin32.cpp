@@ -34,7 +34,7 @@ BITMAPFILEHEADER	 bf;
 BITMAPINFO		 bi;
 
 float			maxBrightness = 0;
-float 			*prop,*totalsupportEdge,*totalsupportNotEdge,*label;
+float 			*prop,*totalsupportEdge,*totalsupportNotEdge,*panel;
 float			plabel[2];
 boolean			state = true;
 
@@ -424,7 +424,7 @@ void laplace(unsigned char *pic, long cx, long cy){
 
 }
 
-void labelPixel(unsigned char *pic,float *label ,long cx, long cy){
+void labelPixel(unsigned char *pic,long cx, long cy){
 
 	unsigned char	*ig2;
 	long			 x, y, m, n;
@@ -448,18 +448,20 @@ void labelPixel(unsigned char *pic,float *label ,long cx, long cy){
 			}
 		}
 	}
-
+	sprintf_s(str ,"maxSum = %lf \n",maxSum);
+	OutputDebugString(str);
 	for (y = 0; y < cy; y ++)
 	{
 		for (x = 0; x < cx; x ++)
 		{
 			if(pic [y*cx + x] != 0){
-				label [(y*cx + x)] = maxSum / maxCount;
-				plabel[1] = label [(y*cx + x)];
+
+				panel [y*cx + x] = (float)1;
+				plabel[1] = panel [(y*cx + x)];
 			}else
 			{
-				label [(y*cx + x)] = minSum / minCount;
-				plabel[0] = label [(y*cx + x)];
+				panel [(y*cx + x)] = minSum / minCount;
+				plabel[0] = panel [(y*cx + x)];
 			}
 		//	sprintf_s(str ,"label [(y*cx + x)] = %lf \n",label [(y*cx + x)]);
 			//OutputDebugString(str);
@@ -467,7 +469,7 @@ void labelPixel(unsigned char *pic,float *label ,long cx, long cy){
 		}
 	}
 }
-float support(float num,long y ,long x , float pop,float *label){
+float support(float num,long y ,long x , float pop){
 	int			count;
 	long		n,m;
 	float		r,q = 0,qsupport = 0;
@@ -480,42 +482,46 @@ float support(float num,long y ,long x , float pop,float *label){
 
 				if((y + n) > 0 || (y + n) < cy || (x + n) > 0 || (x + n) < cx){
 
-					if(label[(y + n )*cx + (x + m)] == plabel[count])
+					if(panel[(y + n )*cx + (x + m)] == plabel[count])
 						r = 1.0*pop;
 					else
 					{
-						r = 0.0*pop;
+						r = 0.5*pop;
 					}
 					q = q + r;
 				}
 			}
-
 			qsupport = qsupport + q;
 		}
 	}
 
 	return qsupport;
 }
+
+
 void relaxtion(unsigned char *ig1, long cx, long cy)
 {
-	unsigned char *ig2;
+	unsigned char *ig2,*ori;
 	long			x,y,n,m;
 	double			 h [3] = { -1, 1, 1};
 	float			down,up;
 	double			num = 2;
-	int				count;
+	int				count,mnn;
+	char			str[254];
 
     ig2 = (unsigned char *) malloc (cx*cy);
-	prop = (float *) malloc (cx*cy*sizeof(float*));
-	totalsupportEdge = (float *) malloc (cx*cy*sizeof(float*));
-	label = (float *) malloc (cx*cy*sizeof(float*));
+	ori = (unsigned char *) malloc (cx*cy);
+
+
+
     for (y = 0; y < cy; y ++)
     {
 		for (x = 0; x < cx; x ++)
 		{
 			ig2 [y*cx + x] = ig1 [y*cx + x];
-			down = (h [2]*ig1 [(y)*cx + (x+1)] + h [0]*ig1 [(y)*cx + (x-1)])/2;
-			up = (h [0]*ig1 [(y+1)*cx + (x)] + h [2]*ig1 [(y-1)*cx + (x)])/2;
+			ori[y*cx + x] = imageMaster [y*cx + x];
+			down = (h [2]*imageMaster [(y)*cx + (x+1)] + h [0]*imageMaster [(y)*cx + (x-1)])/2;
+			up = (h [0]*imageMaster [(y+1)*cx + (x)] + h [2]*imageMaster [(y-1)*cx + (x)])/2;
 			if(fabs(sqrt(pow(down,2)+pow(up,2))) > maxBrightness)
 			{
 				maxBrightness = fabs(sqrt(pow(down,2)+pow(up,2)));
@@ -523,25 +529,39 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 		}
 	}
 
-	laplace(ig2,cx,cy);
-	labelPixel(ig2,label,cx,cy);
-
-	p0(ig2,maxBrightness);
+	laplace(ori,cx,cy);
+	labelPixel(ori,cx,cy);
+	if(state){
+		prop = (float *) malloc (cx*cy*sizeof(float*));
+		totalsupportEdge = (float *) malloc (cx*cy*sizeof(float*));
+		totalsupportNotEdge = (float *) malloc (cx*cy*sizeof(float*));
+		panel = (float *) malloc (cx*cy*sizeof(float*));
+		p0(ig2,maxBrightness);
+		state = false;
+	}
 
 	for (y = 0; y < cy; y ++)
     {
 		for (x = 0; x < cx; x ++)
 		{
-			for(count = 0;count < num ;count ++){
+				totalsupportEdge[y*cx + x] = support(num,y,x,prop[y*cx + x]);
+				totalsupportNotEdge[y*cx + x] = support(num,y,x,(1 - prop[y*cx + x]));
+				prop[y*cx + x] = (prop[y*cx + x]*totalsupportEdge[y*cx + x])/((prop[y*cx + x]*totalsupportEdge[y*cx + x])  + ((1 - prop[y*cx + x])*totalsupportNotEdge[y*cx + x]));
 
-				totalsupportEdge[y*cx + x] = support(num,y,x,prop[y*cx + x],label);
+				sprintf_s(str ,"label [(y*cx + x)] = %lf ,p0 = %lf ,p1 = %lf\n",panel [(y*cx + x)],plabel[1],plabel[0]);
 
-			}
+				if(255 * prop[y*cx + x] !=0){
+					panel[y*cx + x] = plabel[1];
+				}else{
+					panel[y*cx + x] = plabel[0];
+				}
+				OutputDebugString(str);
+				ig1[y*cx + x] = 255 * prop[y*cx + x];
 		}
 	}
-
-
 	showImage();
+	free(ig2);
+	//free(label);
 }
 
 void loadfile (LPOLESTR lpszpath)
@@ -811,7 +831,7 @@ LRESULT CALLBACK WndProc (HWND hWnds, UINT message, WPARAM wParam, LPARAM lParam
 									state = true;
 																	paint(hWnd);
 																	break;
-								case IDM_RL						:	for(i = 0;i<=10;i++)
+								case IDM_RL						:	//for(i = 0;i<=10;i++)
 																	relaxtion(grey1, cx, cy);
 																	paint(hWnd);
 																	break;
