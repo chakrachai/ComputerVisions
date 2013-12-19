@@ -34,7 +34,8 @@ BITMAPFILEHEADER	 bf;
 BITMAPINFO		 bi;
 
 float			maxBrightness = 0;
-float 			*prop, *edge, *not_edge,*label;;
+float 			*prop,*totalsupportEdge,*totalsupportNotEdge,*label;
+float			plabel[2];
 boolean			state = true;
 
 int APIENTRY _tWinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
@@ -320,27 +321,30 @@ void converlutionProcess (unsigned char *ig1, long cx, long cy)
 
 }
 
-double psStage(long y, long x, long n, long m, unsigned char *ig2 , double maxBrightness)
+void p0(unsigned char *ig2 , double maxBrightness)
 {
 	double			 h [3] = { -1, 1, 1};
-	double			 up, down, brightness = 0,p ,degree,degreeValue;
+	float			 up, down, brightness = 0,p ,degree,degreeValue;
+	long			x,y,n,m = 0;
 	char			str[255];
 	double			addrress ;
-	if((y + n) < 0 || (y + n) > cy || (x + n) < 0 || (x + n) > cx){
-		down = (h [2] * 0 + h [0] * 0)/2;
-		up   = (h [0] * 0 + h [2] * 0)/2;
-	}else
-	{
-		down = (h [2]*ig2 [(y + n)*cx + (x + m + 1)] + h [0]*ig2 [(y + n)*cx + (x + m - 1)])/2;
-		up   = (h [0]*ig2 [(y + n + 1)*cx + (x + m)] + h [2]*ig2 [(y + n - 1)*cx + (x + m)])/2;
+
+	for (y = 0; y < cy; y ++)
+    {
+		for (x = 0; x < cx; x ++)
+		{
+			down = (h [2]*ig2 [(y)*cx + (x + 1)] + h [0]*ig2 [(y)*cx + (x- 1)])/2;
+			up   = (h [0]*ig2 [(y + 1)*cx + (x)] + h [2]*ig2 [(y - 1)*cx + (x)])/2;
+
+			brightness = sqrt(pow(down,2)+pow(up,2)) < 0.0 ? -sqrt(pow(down,2)+pow(up,2)) : sqrt(pow(down,2)+pow(up,2)); //ความเข้ม
+			prop[(y)*cx + (x)] = brightness / maxBrightness ;// p0
+
+			//if(prop[(y)*cx + (x)] > 0.5)
+			//sprintf_s(str ,"prop[(y)*cx + (x)]=%lf\n",prop[(y)*cx + (x)]);
+			//OutputDebugString(str);
+			
+		}
 	}
-	brightness = sqrt(pow(down,2)+pow(up,2)) < 0.0 ? -sqrt(pow(down,2)+pow(up,2)) : sqrt(pow(down,2)+pow(up,2)); //ความเข้ม
-	p = brightness / maxBrightness ;// p0
-
-	////sprintf_s(str ,"ps = %lf \n",p);
-	//OutputDebugString(str);
-
-	return p;
 }
 
 double degree(long y, long x, long n, long m, unsigned char *ig2)
@@ -430,6 +434,7 @@ void labelPixel(unsigned char *pic,float *label ,long cx, long cy){
 	double			 sum, nrm,maxSum = 0.0,minSum = 0.0,maxCount =0,minCount = 0;
 	char			str[254];
 
+
 	for (y = 0; y < cy ; y ++)
 	{
 		for (x = 0; x < cx ; x ++)
@@ -450,9 +455,11 @@ void labelPixel(unsigned char *pic,float *label ,long cx, long cy){
 		{
 			if(pic [y*cx + x] != 0){
 				label [(y*cx + x)] = maxSum / maxCount;
+				plabel[1] = label [(y*cx + x)];
 			}else
 			{
 				label [(y*cx + x)] = minSum / minCount;
+				plabel[0] = label [(y*cx + x)];
 			}
 		//	sprintf_s(str ,"label [(y*cx + x)] = %lf \n",label [(y*cx + x)]);
 			//OutputDebugString(str);
@@ -460,24 +467,75 @@ void labelPixel(unsigned char *pic,float *label ,long cx, long cy){
 		}
 	}
 }
+float support(float num,long y ,long x , float pop,float *label){
+	int			count;
+	long		n,m;
+	float		r,q = 0,qsupport = 0;
+
+	for (n = -2; n <= 2; n ++)
+	{
+		for (m = -2; m <= 2; m ++)
+		{
+			for(count = 0 ;count < num ;count ++){
+
+				if((y + n) > 0 || (y + n) < cy || (x + n) > 0 || (x + n) < cx){
+
+					if(label[(y + n )*cx + (x + m)] == plabel[count])
+						r = 1.0*pop;
+					else
+					{
+						r = 0.0*pop;
+					}
+					q = q + r;
+				}
+			}
+
+			qsupport = qsupport + q;
+		}
+	}
+
+	return qsupport;
+}
 void relaxtion(unsigned char *ig1, long cx, long cy)
 {
 	unsigned char *ig2;
 	long			x,y,n,m;
 	double			 h [3] = { -1, 1, 1};
 	float			down,up;
+	double			num = 2;
+	int				count;
 
     ig2 = (unsigned char *) malloc (cx*cy);
+	prop = (float *) malloc (cx*cy*sizeof(float*));
+	totalsupportEdge = (float *) malloc (cx*cy*sizeof(float*));
+	label = (float *) malloc (cx*cy*sizeof(float*));
     for (y = 0; y < cy; y ++)
     {
 		for (x = 0; x < cx; x ++)
 		{
 			ig2 [y*cx + x] = ig1 [y*cx + x];
-			down = (h [2]*ig1 [(y)*cx + (x+1)] - h [0]*ig1 [(y)*cx + (x-1)])/2;
-			up = (h [0]*ig1 [(y+1)*cx + (x)] - h [2]*ig1 [(y-1)*cx + (x)])/2;
+			down = (h [2]*ig1 [(y)*cx + (x+1)] + h [0]*ig1 [(y)*cx + (x-1)])/2;
+			up = (h [0]*ig1 [(y+1)*cx + (x)] + h [2]*ig1 [(y-1)*cx + (x)])/2;
 			if(fabs(sqrt(pow(down,2)+pow(up,2))) > maxBrightness)
 			{
 				maxBrightness = fabs(sqrt(pow(down,2)+pow(up,2)));
+			}
+		}
+	}
+
+	laplace(ig2,cx,cy);
+	labelPixel(ig2,label,cx,cy);
+
+	p0(ig2,maxBrightness);
+
+	for (y = 0; y < cy; y ++)
+    {
+		for (x = 0; x < cx; x ++)
+		{
+			for(count = 0;count < num ;count ++){
+
+				totalsupportEdge[y*cx + x] = support(num,y,x,prop[y*cx + x],label);
+
 			}
 		}
 	}
