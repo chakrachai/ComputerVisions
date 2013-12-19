@@ -35,8 +35,9 @@ BITMAPINFO		 bi;
 
 float			maxBrightness = 0;
 float 			*prop,*totalsupportEdge,*totalsupportNotEdge,*panel;
-float			plabel[2];
+float			plabel[2] = {0,1};
 boolean			state = true;
+
 
 int APIENTRY _tWinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
                         LPTSTR lpCmdLine,
@@ -433,8 +434,7 @@ void labelPixel(unsigned char *pic,long cx, long cy){
 								 {0,  1, 0}};
 	double			 sum, nrm,maxSum = 0.0,minSum = 0.0,maxCount =0,minCount = 0;
 	char			str[254];
-
-
+	//panel [20*cx + 20] = (float)1;
 	for (y = 0; y < cy ; y ++)
 	{
 		for (x = 0; x < cx ; x ++)
@@ -448,20 +448,20 @@ void labelPixel(unsigned char *pic,long cx, long cy){
 			}
 		}
 	}
-	sprintf_s(str ,"maxSum = %lf \n",maxSum);
-	OutputDebugString(str);
+	//sprintf_s(str ,"maxSum = %lf \n",maxSum);
+	//OutputDebugString(str);
 	for (y = 0; y < cy; y ++)
 	{
 		for (x = 0; x < cx; x ++)
 		{
 			if(pic [y*cx + x] != 0){
 
-				panel [y*cx + x] = (float)1;
-				plabel[1] = panel [(y*cx + x)];
+				//panel [y*cx + x] = (float)1;
+				plabel[1] = maxSum / maxCount;;
 			}else
 			{
-				panel [(y*cx + x)] = minSum / minCount;
-				plabel[0] = panel [(y*cx + x)];
+				//panel [(y*cx + x)] = minSum / minCount;
+				plabel[0] = minSum / minCount;;
 			}
 		//	sprintf_s(str ,"label [(y*cx + x)] = %lf \n",label [(y*cx + x)]);
 			//OutputDebugString(str);
@@ -473,12 +473,14 @@ float support(float num,long y ,long x , float pop){
 	int			count;
 	long		n,m;
 	float		r,q = 0,qsupport = 0;
-
+		panel[0] = 0.0;
+	panel[1] = 1.0;
 	for (n = -2; n <= 2; n ++)
 	{
 		for (m = -2; m <= 2; m ++)
 		{
 			for(count = 0 ;count < num ;count ++){
+				q = 0;
 
 				if((y + n) > 0 || (y + n) < cy || (x + n) > 0 || (x + n) < cx){
 
@@ -508,6 +510,7 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 	double			num = 2;
 	int				count,mnn;
 	char			str[254];
+	float			maxCount = 0,minCount = 0,maxSum = 0,minSum = 0;
 
     ig2 = (unsigned char *) malloc (cx*cy);
 	ori = (unsigned char *) malloc (cx*cy);
@@ -519,9 +522,9 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 		for (x = 0; x < cx; x ++)
 		{
 			ig2 [y*cx + x] = ig1 [y*cx + x];
-			ori[y*cx + x] = imageMaster [y*cx + x];
-			down = (h [2]*imageMaster [(y)*cx + (x+1)] + h [0]*imageMaster [(y)*cx + (x-1)])/2;
-			up = (h [0]*imageMaster [(y+1)*cx + (x)] + h [2]*imageMaster [(y-1)*cx + (x)])/2;
+			ori[y*cx + x] = ig1 [y*cx + x];
+			down = (h [2]*ig1 [(y)*cx + (x+1)] + h [0]*ig1 [(y)*cx + (x-1)])/2;
+			up = (h [0]*ig1 [(y+1)*cx + (x)] + h [2]*ig1 [(y-1)*cx + (x)])/2;
 			if(fabs(sqrt(pow(down,2)+pow(up,2))) > maxBrightness)
 			{
 				maxBrightness = fabs(sqrt(pow(down,2)+pow(up,2)));
@@ -530,7 +533,7 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 	}
 
 	laplace(ori,cx,cy);
-	labelPixel(ori,cx,cy);
+	//labelPixel(ori,cx,cy);
 	if(state){
 		prop = (float *) malloc (cx*cy*sizeof(float*));
 		totalsupportEdge = (float *) malloc (cx*cy*sizeof(float*));
@@ -538,26 +541,59 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 		panel = (float *) malloc (cx*cy*sizeof(float*));
 		p0(ig2,maxBrightness);
 		state = false;
+		for (y = 0; y < cy ; y ++)
+		{
+			for (x = 0; x < cx ; x ++)
+			{
+				if(ori [y*cx + x] != 0){
+					maxSum += ori [y*cx + x];
+					maxCount += 1;
+				}else{
+					minSum += ori [y*cx + x];
+					minCount += 1;
+				}
+			}
 	}
+	//sprintf_s(str ,"maxSum = %lf \n",maxSum);
+	//OutputDebugString(str);
+	for (y = 0; y < cy; y ++)
+	{
+		for (x = 0; x < cx; x ++)
+		{
+			if(ori [y*cx + x] != 0){
 
+				panel [y*cx + x] =  maxSum / maxCount;
+				plabel[1] = maxSum / maxCount;
+			}else
+			{
+				panel [(y*cx + x)] = minSum / minCount;
+				plabel[0] = minSum / minCount;
+			}
+		//	sprintf_s(str ,"label [(y*cx + x)] = %lf \n",label [(y*cx + x)]);
+			//OutputDebugString(str);
+
+		}
+	}
+	}
+	for(int i = 0; i< 1;i++){
 	for (y = 0; y < cy; y ++)
     {
 		for (x = 0; x < cx; x ++)
 		{
 				totalsupportEdge[y*cx + x] = support(num,y,x,prop[y*cx + x]);
 				totalsupportNotEdge[y*cx + x] = support(num,y,x,(1 - prop[y*cx + x]));
+				//sprintf_s(str ,"prop[y*cx + x] = %lf ,prop[+1] = %lf\n",prop[y*cx + x],(prop[y*cx + x]*totalsupportEdge[y*cx + x])/((prop[y*cx + x]*totalsupportEdge[y*cx + x])  + ((1 - prop[y*cx + x])*totalsupportNotEdge[y*cx + x])));
+				//OutputDebugString(str);
 				prop[y*cx + x] = (prop[y*cx + x]*totalsupportEdge[y*cx + x])/((prop[y*cx + x]*totalsupportEdge[y*cx + x])  + ((1 - prop[y*cx + x])*totalsupportNotEdge[y*cx + x]));
 
-				sprintf_s(str ,"label [(y*cx + x)] = %lf ,p0 = %lf ,p1 = %lf\n",panel [(y*cx + x)],plabel[1],plabel[0]);
-
-				if(255 * prop[y*cx + x] !=0){
-					panel[y*cx + x] = plabel[1];
-				}else{
-					panel[y*cx + x] = plabel[0];
+				//sprintf_s(str ,"label [(y*cx + x)] = %lf ,p0 = %lf ,p1 = %lf\n",panel [(y*cx + x)],plabel[1],plabel[0]);
+				//OutputDebugString(str);
+				if(255 * prop[y*cx + x] != 0 ){
+					panel [y*cx + x] = plabel[1];
 				}
-				OutputDebugString(str);
 				ig1[y*cx + x] = 255 * prop[y*cx + x];
 		}
+	}
 	}
 	showImage();
 	free(ig2);
@@ -831,7 +867,7 @@ LRESULT CALLBACK WndProc (HWND hWnds, UINT message, WPARAM wParam, LPARAM lParam
 									state = true;
 																	paint(hWnd);
 																	break;
-								case IDM_RL						:	//for(i = 0;i<=10;i++)
+								case IDM_RL						:	for(i = 0;i<=34;i++)
 																	relaxtion(grey1, cx, cy);
 																	paint(hWnd);
 																	break;
