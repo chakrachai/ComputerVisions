@@ -469,7 +469,7 @@ void labelPixel(unsigned char *pic,long cx, long cy){
 		}
 	}
 }
-float support(float num,long y ,long x , float pop){
+float support(float num,long y ,long x , float *pop,float *p){
 	int			count;
 	long		n,m;
 	float		r,q = 0,qsupport = 0;
@@ -479,19 +479,12 @@ float support(float num,long y ,long x , float pop){
 	{
 		for (m = -2; m <= 2; m ++)
 		{
-			for(count = 0 ;count < num ;count ++){
-				q = 0;
-
-				if((y + n) > 0 || (y + n) < cy || (x + n) > 0 || (x + n) < cx){
-
-					if(panel[(y + n )*cx + (x + m)] == plabel[count])
-						r = 1.0*pop;
-					else
-					{
-						r = 0.5*pop;
-					}
-					q = q + r;
-				}
+			q= 0;
+			r = 0;
+				if((y + n) >= 0 || (y + n) <= cy || (x + n) >= 0 || (x + n) <= cx){
+					r = fabs(1.0 - fabs(degree(y,x,0,0,imageMaster) - degree(y,x,n,m,imageMaster))/180)*pop[(y+n)*cx +(x+m)] +(0.5*(1-pop[(y+n)*cx +(x+m)]));
+					r = r + (0.5*(1-pop[(y+n)*cx +(x+m)])) + (0.5 * pop[(y+n)*cx +(x+m)]);
+						q = r;
 			}
 			qsupport = qsupport + q;
 		}
@@ -532,7 +525,7 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 		}
 	}
 
-	laplace(ori,cx,cy);
+	//laplace(ori,cx,cy);
 	//labelPixel(ori,cx,cy);
 	if(state){
 		prop = (float *) malloc (cx*cy*sizeof(float*));
@@ -562,12 +555,12 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 		{
 			if(ori [y*cx + x] != 0){
 
-				panel [y*cx + x] =  maxSum / maxCount;
-				plabel[1] = maxSum / maxCount;
+				panel [y*cx + x] =  1.0;
+				plabel[1] = 0.0;
 			}else
 			{
-				panel [(y*cx + x)] = minSum / minCount;
-				plabel[0] = minSum / minCount;
+				panel [(y*cx + x)] = 0.0;
+				plabel[0] = 0.0;
 			}
 		//	sprintf_s(str ,"label [(y*cx + x)] = %lf \n",label [(y*cx + x)]);
 			//OutputDebugString(str);
@@ -575,13 +568,13 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 		}
 	}
 	}
-	for(int i = 0; i< 1;i++){
+	for(int i = 0; i< 5;i++){
 	for (y = 0; y < cy; y ++)
     {
 		for (x = 0; x < cx; x ++)
 		{
-				totalsupportEdge[y*cx + x] = support(num,y,x,prop[y*cx + x]);
-				totalsupportNotEdge[y*cx + x] = support(num,y,x,(1 - prop[y*cx + x]));
+			totalsupportEdge[y*cx + x] = support(num,y,x,prop,panel);
+			totalsupportNotEdge[y*cx + x] = support(num,y,x,prop,panel);
 				//sprintf_s(str ,"prop[y*cx + x] = %lf ,prop[+1] = %lf\n",prop[y*cx + x],(prop[y*cx + x]*totalsupportEdge[y*cx + x])/((prop[y*cx + x]*totalsupportEdge[y*cx + x])  + ((1 - prop[y*cx + x])*totalsupportNotEdge[y*cx + x])));
 				//OutputDebugString(str);
 				prop[y*cx + x] = (prop[y*cx + x]*totalsupportEdge[y*cx + x])/((prop[y*cx + x]*totalsupportEdge[y*cx + x])  + ((1 - prop[y*cx + x])*totalsupportNotEdge[y*cx + x]));
@@ -867,7 +860,7 @@ LRESULT CALLBACK WndProc (HWND hWnds, UINT message, WPARAM wParam, LPARAM lParam
 									state = true;
 																	paint(hWnd);
 																	break;
-								case IDM_RL						:	for(i = 0;i<=34;i++)
+								case IDM_RL						:	//for(i = 0;i<=34;i++)
 																	relaxtion(grey1, cx, cy);
 																	paint(hWnd);
 																	break;
