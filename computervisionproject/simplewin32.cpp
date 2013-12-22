@@ -5,7 +5,6 @@
 #include <shobjidl.h> 
 #include  "simplewin32.h"
 #define MAX_LOADSTRING  100
-#define	pi 22/7
 
 // Global Variables:
 HINSTANCE   hInst;                          // current instance
@@ -29,10 +28,16 @@ char    szText [241];
 unsigned char	*image	= NULL;			// image array
 unsigned char	*grey1	= NULL;
 unsigned char	*imageMaster	= NULL;
-long			 bpp, cx = 0, cy = 0;	// image dimension
+long			 bpp, cx = 640, cy = 480;	// image dimension
 LPOLESTR		filepath;
 BITMAPFILEHEADER	 bf;
 BITMAPINFO		 bi;
+
+float			maxBrightness = 0;
+float 			*prop,*totalsupportEdge,*totalsupportNotEdge,*panel;
+float			plabel[2] = {0,1};
+boolean			state = true;
+
 
 int APIENTRY _tWinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
                         LPTSTR lpCmdLine,
@@ -317,55 +322,84 @@ void converlutionProcess (unsigned char *ig1, long cx, long cy)
 
 }
 
-double psStage(long y, long x, long m, long n, unsigned char *ig2 , double maxBrightness)
+void p0(unsigned char *ig2 , double maxBrightness)
 {
-	double			 h [3] = { 1, 1, 1};
-	double			 up, down, brightness = 0,p ,degree,degreeValue;
+	double			 h [3] = { -1, 1, 1};
+	float			 up, down, brightness = 0,p ,degree,degreeValue;
+	long			x,y,n,m = 0;
+	char			str[255];
+	double			addrress ;
 
+	for (y = 0; y < cy; y ++)
+    {
+		for (x = 0; x < cx; x ++)
+		{
+			down = (h [2]*ig2 [(y)*cx + (x + 1)] + h [0]*ig2 [(y)*cx + (x- 1)])/2;
+			up   = (h [0]*ig2 [(y + 1)*cx + (x)] + h [2]*ig2 [(y - 1)*cx + (x)])/2;
 
-	down = (h [2]*ig2 [(y + n)*cx + (x + m + 1)] - h [0]*ig2 [(y + n)*cx + (x + m - 1)])/2;
-	up   = (h [0]*ig2 [(y + n + 1)*cx + (x + m)] - h [2]*ig2 [(y + n - 1)*cx + (x + m)])/2;
-	brightness = sqrt(pow(down,2)+pow(up,2)) < 0.0 ? -sqrt(pow(down,2)+pow(up,2)) : sqrt(pow(down,2)+pow(up,2)); //ความเข้ม
-	p = brightness / maxBrightness ;// p0
+			brightness = sqrt(pow(down,2)+pow(up,2)) < 0.0 ? -sqrt(pow(down,2)+pow(up,2)) : sqrt(pow(down,2)+pow(up,2)); //ความเข้ม
+			prop[(y)*cx + (x)] = brightness / maxBrightness ;// p0
 
-	return p;
+			//if(prop[(y)*cx + (x)] > 0.5)
+			//sprintf_s(str ,"prop[(y)*cx + (x)]=%lf\n",prop[(y)*cx + (x)]);
+			//OutputDebugString(str);
+			
+		}
+	}
 }
 
-double degree(long y, long x, long n, long m, unsigned char *ig2 , double maxBrightness)
+double degree(long y, long x, long n, long m, unsigned char *ig2)
 {
-	double			 h [3] = { 1, 1, 1};
+	double			 h [3] = { -1, 1, 1};
 	double			 up, down, brightness = 0, degree,degreeValue;
+	char			str[255];
 
-	down = (h [2]*ig2 [(y + n)*cx + (x + m + 1)] - h [0]*ig2 [(y + n)*cx + (x + m - 1)])/2;
-	up   = (h [0]*ig2 [(y + n + 1)*cx + (x + m)] - h [2]*ig2 [(y + n - 1)*cx + (x + m)])/2;
-	brightness = sqrt(pow(down,2)+pow(up,2)) < 0.0 ? -sqrt(pow(down,2)+pow(up,2)) : sqrt(pow(down,2)+pow(up,2)); //ความเข้ม
-	degreeValue = (down/(up == 0.0 ? 0.000000001 :up));
-	degree = atan(degreeValue)*180/pi;
-	
+	if((y + n) < 0 || (y + n) > cy || (x + n) < 0 || (x + n) > cx){
+		down = (h [2] * 0 + h [0] * 0)/2;
+		up   = (h [0] * 0 + h [2] * 0)/2;
+	}else
+	{
+		down = (h [2]*ig2 [(y + n)*cx + (x + m + 1)] + h [0]*ig2 [(y + n)*cx + (x + m - 1)])/2;
+		up   = (h [0]*ig2 [(y + n + 1)*cx + (x + m)] + h [2]*ig2 [(y + n - 1)*cx + (x + m)])/2;
+	}
+
+	if(up == 0){
+
+		degree = 90.0;
+
+	}else{
+
+		degreeValue = (down/up);
+		degree = (atan(degreeValue))*180/(22/7);
+	}
+		///sprintf_s(str ,"down = %lf , up = %lf ,brigth = %lf , degreevakue=%lf , degree=%lf\n",down,up,brightness,degreeValue,degree);
+		//OutputDebugString(str);
 	return degree;
 }
-void relaxtion(unsigned char *ig1, long cx, long cy)
-{
+void laplace(unsigned char *pic, long cx, long cy){
 	unsigned char	*ig2;
 	long			 x, y, m, n;
-	double			 h [3] = { 1, 1, 1};
-	double			 up, down, ps, edge, notEdge = 0, qEdge = 0, pj, psDegree, pjDegree, ps_1;
-	double			maxBrightness = 0;
-	double			nEdge = 0.01;
-	char			str[255];
+	double			 h [3][3] = {{0,  1, 0},
+								 {1,  -4, 1},
+								 {0,  1, 0}};
+	double			 sum, nrm,maxSum = 0.0,minSum = 0.0,maxCount =0,minCount = 0;
+	
+	/*for (y = 0; y < cy; y ++)
+	{
+		for (x = 0; x < cx; x ++)
+		{
+			if (x > 20 && x < 100)
+				ig1 [x + y*cx] = 0;
+		}
+	}
+	*/
 
 	ig2 = (unsigned char *) malloc (cx*cy);
 	for (y = 0; y < cy; y ++)
 	{
 		for (x = 0; x < cx; x ++)
 		{
-			ig2 [y*cx + x] = ig1 [y*cx + x];
-			down = (h [2]*ig1 [(y)*cx + (x+1)] - h [0]*ig1 [(y)*cx + (x-1)])/2;
-			up   = (h [0]*ig1 [(y+1)*cx + (x)] - h [2]*ig1 [(y-1)*cx + (x)])/2;
-			if(fabs(sqrt(pow(down,2)+pow(up,2))) > maxBrightness)
-			{
-				maxBrightness = fabs(sqrt(pow(down,2)+pow(up,2)));
-			}
+			ig2 [y*cx + x] = pic [y*cx + x];
 		}
 	}
 
@@ -373,48 +407,190 @@ void relaxtion(unsigned char *ig1, long cx, long cy)
 	{
 		for (x = 1; x < cx - 1; x ++)
 		{
-			ps = psStage(y, x, 0, 0,ig2 , maxBrightness);
-			psDegree = degree(y, x, 0, 0,ig2 , maxBrightness);
-					
+			sum = 0.0;
+			nrm = 0.0;
 			for (n = -1; n <= 1; n ++)
 			{
 				for (m = -1; m <= 1; m ++)
 				{
-					if(fabs((double)n) + fabs((double)m) != 0)
-					{
-						pj = psStage(y, x, n, m,ig2 , maxBrightness);
-
-						pjDegree = degree(y, x, 0, 0,ig2 , maxBrightness);
-
-						edge = fabs(1 - (fabs(psDegree - pjDegree)/180));
-						qEdge += (edge * pj) + (nEdge * (1 - pj)); //Q(ai:yk)
-						notEdge += (nEdge * pj) + (nEdge * (1 - pj));
-					}
+					sum += h [n+1][m+1]*ig2 [(y+n)*cx + (x+m)];
+					nrm += h [n+1][m+1] < 0.0 ? -h [n+1][m+1] : h [n+1][m+1];
 				}
 			}
-			
-			ps_1 = (ps * qEdge) / ((ps * qEdge) + ((1 - ps) * notEdge)); //ps+1
-			//sprintf_s(str ,"ps = %lf , qedge = %lf ,notedge = %lf ,new ps = %lf , max = %lf \n",ps,qEdge,notEdge,ps_1, maxBrightness);
-			//OutputDebugString(str);
-			if(ps_1 > 0.5 && ps_1 <=1.0)
-			{
-				ig1 [y*cx + x] = 255;
+			pic [y*cx + x] = (int) ((sum < 0.0 ? -sum : sum)/nrm);
+		}
+	}
 
-				qEdge = 0;
-				notEdge = 0;
-			}else if(ps_1 >= 0.0 && ps_1 <= 0.5)
-			{
-				ig1 [y*cx + x] = 0;
-				qEdge = 0;
-				notEdge = 0;
+	free(ig2);
+
+}
+
+void labelPixel(unsigned char *pic,long cx, long cy){
+
+	unsigned char	*ig2;
+	long			 x, y, m, n;
+	double			 h [3][3] = {{0,  1, 0},
+								 {1,  -4, 1},
+								 {0,  1, 0}};
+	double			 sum, nrm,maxSum = 0.0,minSum = 0.0,maxCount =0,minCount = 0;
+	char			str[254];
+	//panel [20*cx + 20] = (float)1;
+	for (y = 0; y < cy ; y ++)
+	{
+		for (x = 0; x < cx ; x ++)
+		{
+			if(pic [y*cx + x] != 0){
+				maxSum += pic [y*cx + x];
+				maxCount += 1;
 			}else{
-				MessageBox(NULL,"logic not true",NULL,NULL);
-				break ; 
+				minSum += pic [y*cx + x];
+				minCount += 1;
 			}
 		}
 	}
+	//sprintf_s(str ,"maxSum = %lf \n",maxSum);
+	//OutputDebugString(str);
+	for (y = 0; y < cy; y ++)
+	{
+		for (x = 0; x < cx; x ++)
+		{
+			if(pic [y*cx + x] != 0){
+
+				//panel [y*cx + x] = (float)1;
+				plabel[1] = maxSum / maxCount;;
+			}else
+			{
+				//panel [(y*cx + x)] = minSum / minCount;
+				plabel[0] = minSum / minCount;;
+			}
+		//	sprintf_s(str ,"label [(y*cx + x)] = %lf \n",label [(y*cx + x)]);
+			//OutputDebugString(str);
+
+		}
+	}
+}
+float support(float num,long y ,long x , float *pop,float *p){
+	int			count;
+	long		n,m;
+	float		r,q = 0,qsupport = 0;
+		panel[0] = 0.0;
+	panel[1] = 1.0;
+	for (n = -2; n <= 2; n ++)
+	{
+		for (m = -2; m <= 2; m ++)
+		{
+			q= 0;
+			r = 0;
+				if((y + n) >= 0 || (y + n) <= cy || (x + n) >= 0 || (x + n) <= cx){
+					r = fabs(1.0 - fabs(degree(y,x,0,0,imageMaster) - degree(y,x,n,m,imageMaster))/180)*pop[(y+n)*cx +(x+m)] +(0.5*(1-pop[(y+n)*cx +(x+m)]));
+					r = r + (0.5*(1-pop[(y+n)*cx +(x+m)])) + (0.5 * pop[(y+n)*cx +(x+m)]);
+						q = r;
+			}
+			qsupport = qsupport + q;
+		}
+	}
+
+	return qsupport;
+}
+
+
+void relaxtion(unsigned char *ig1, long cx, long cy)
+{
+	unsigned char *ig2,*ori;
+	long			x,y,n,m;
+	double			 h [3] = { -1, 1, 1};
+	float			down,up;
+	double			num = 2;
+	int				count,mnn;
+	char			str[254];
+	float			maxCount = 0,minCount = 0,maxSum = 0,minSum = 0;
+
+    ig2 = (unsigned char *) malloc (cx*cy);
+	ori = (unsigned char *) malloc (cx*cy);
+
+
+
+    for (y = 0; y < cy; y ++)
+    {
+		for (x = 0; x < cx; x ++)
+		{
+			ig2 [y*cx + x] = ig1 [y*cx + x];
+			ori[y*cx + x] = ig1 [y*cx + x];
+			down = (h [2]*ig1 [(y)*cx + (x+1)] + h [0]*ig1 [(y)*cx + (x-1)])/2;
+			up = (h [0]*ig1 [(y+1)*cx + (x)] + h [2]*ig1 [(y-1)*cx + (x)])/2;
+			if(fabs(sqrt(pow(down,2)+pow(up,2))) > maxBrightness)
+			{
+				maxBrightness = fabs(sqrt(pow(down,2)+pow(up,2)));
+			}
+		}
+	}
+
+	//laplace(ori,cx,cy);
+	//labelPixel(ori,cx,cy);
+	if(state){
+		prop = (float *) malloc (cx*cy*sizeof(float*));
+		totalsupportEdge = (float *) malloc (cx*cy*sizeof(float*));
+		totalsupportNotEdge = (float *) malloc (cx*cy*sizeof(float*));
+		panel = (float *) malloc (cx*cy*sizeof(float*));
+		p0(ig2,maxBrightness);
+		state = false;
+		for (y = 0; y < cy ; y ++)
+		{
+			for (x = 0; x < cx ; x ++)
+			{
+				if(ori [y*cx + x] != 0){
+					maxSum += ori [y*cx + x];
+					maxCount += 1;
+				}else{
+					minSum += ori [y*cx + x];
+					minCount += 1;
+				}
+			}
+	}
+	//sprintf_s(str ,"maxSum = %lf \n",maxSum);
+	//OutputDebugString(str);
+	for (y = 0; y < cy; y ++)
+	{
+		for (x = 0; x < cx; x ++)
+		{
+			if(ori [y*cx + x] != 0){
+
+				panel [y*cx + x] =  1.0;
+				plabel[1] = 0.0;
+			}else
+			{
+				panel [(y*cx + x)] = 0.0;
+				plabel[0] = 0.0;
+			}
+		//	sprintf_s(str ,"label [(y*cx + x)] = %lf \n",label [(y*cx + x)]);
+			//OutputDebugString(str);
+
+		}
+	}
+	}
+	for(int i = 0; i< 5;i++){
+	for (y = 0; y < cy; y ++)
+    {
+		for (x = 0; x < cx; x ++)
+		{
+			totalsupportEdge[y*cx + x] = support(num,y,x,prop,panel);
+			totalsupportNotEdge[y*cx + x] = support(num,y,x,prop,panel);
+				//sprintf_s(str ,"prop[y*cx + x] = %lf ,prop[+1] = %lf\n",prop[y*cx + x],(prop[y*cx + x]*totalsupportEdge[y*cx + x])/((prop[y*cx + x]*totalsupportEdge[y*cx + x])  + ((1 - prop[y*cx + x])*totalsupportNotEdge[y*cx + x])));
+				//OutputDebugString(str);
+				prop[y*cx + x] = (prop[y*cx + x]*totalsupportEdge[y*cx + x])/((prop[y*cx + x]*totalsupportEdge[y*cx + x])  + ((1 - prop[y*cx + x])*totalsupportNotEdge[y*cx + x]));
+
+				//sprintf_s(str ,"label [(y*cx + x)] = %lf ,p0 = %lf ,p1 = %lf\n",panel [(y*cx + x)],plabel[1],plabel[0]);
+				//OutputDebugString(str);
+				if(255 * prop[y*cx + x] != 0 ){
+					panel [y*cx + x] = plabel[1];
+				}
+				ig1[y*cx + x] = 255 * prop[y*cx + x];
+		}
+	}
+	}
 	showImage();
-	free (ig2);
+	free(ig2);
+	//free(label);
 }
 
 void loadfile (LPOLESTR lpszpath)
@@ -616,7 +792,7 @@ void paint(HWND hWnds)
 //
 LRESULT CALLBACK WndProc (HWND hWnds, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    int         wmId, wmEvent;
+    int         wmId, wmEvent , i;
     PAINTSTRUCT ps;
     HDC         hdc;
 	long		y,x;
@@ -635,8 +811,10 @@ LRESULT CALLBACK WndProc (HWND hWnds, UINT message, WPARAM wParam, LPARAM lParam
 
 								case IDM_OPENFILE				:	openDiarog();
 																	paint(hWnds);
+																	if(filepath)
 																	CoTaskMemFree(filepath);
 																	SetWindowPos(hWnd,NULL,0,0,cx+16,cy+59,NULL);
+																			state = true;
 																	break;
 								case IDM_SAVEFILE				:	saveDiarog();
 																	break;
@@ -645,6 +823,7 @@ LRESULT CALLBACK WndProc (HWND hWnds, UINT message, WPARAM wParam, LPARAM lParam
 																	break;
 								case IDM_CONVERLUTION			:	if(converlutionTool == NULL){
 																		createConverlutionTool();
+																		state = true;
 																	}
 																	break;
 								case IDM_OKCON					:	converlutionProcess (grey1, cx, cy);
@@ -673,13 +852,16 @@ LRESULT CALLBACK WndProc (HWND hWnds, UINT message, WPARAM wParam, LPARAM lParam
 																	break;
 
 								case IDM_MEAN					:	noiseProcess(grey1, cx, cy,true);
+									state = true;
 																	paint(hWnd);
 																	break;
 
 								case IDM_MEDIAN					:	noiseProcess(grey1, cx, cy,false);
+									state = true;
 																	paint(hWnd);
 																	break;
-								case IDM_RL						:	relaxtion(grey1, cx, cy);
+								case IDM_RL						:	//for(i = 0;i<=34;i++)
+																	relaxtion(grey1, cx, cy);
 																	paint(hWnd);
 																	break;
 								default					         :   
